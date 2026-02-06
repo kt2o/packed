@@ -39,21 +39,21 @@ export default function SubmitScreen() {
 
   return (
     <ScrollView style={styles.container} contentContainerStyle={styles.scrollView}>
-      <Text style={styles.title}>*Location*</Text>
+      <Text style={styles.title}>Study Location Status</Text>
 
          <View style={styles.inputContainer}>
-          <Text style={styles.label}>How busy is *location*?</Text>
+          <Text style={styles.label}>How busy is this location?</Text>
           <RadioButton.Group onValueChange={value => setSelectedOption(value)} value={selectedOption}>
             <View style={styles.radioOption}>
-              <RadioButton value="option1" />
+              <RadioButton value="empty" />
               <Text style={styles.radioLabel}>Empty</Text>
             </View>
             <View style={styles.radioOption}>
-              <RadioButton value="option2" />
+              <RadioButton value="normal" />
               <Text style={styles.radioLabel}>Normal</Text>
             </View>
             <View style={styles.radioOption}>
-              <RadioButton value="option3" />
+              <RadioButton value="packed" />
               <Text style={styles.radioLabel}>Packed</Text>
             </View>
           </RadioButton.Group>

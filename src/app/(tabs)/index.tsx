@@ -1,9 +1,25 @@
-import { Text, View, StyleSheet, ImageBackground } from "react-native";
+import { useRouter } from 'expo-router';
+import { Text, View, StyleSheet, ImageBackground, TouchableOpacity} from "react-native";
 
 export default function HomeScreen() {
+  const router = useRouter();
+
+  const handleCardPress = (locationName: string) => {
+    router.push({
+      pathname: '/submit',
+      params: { location: locationName }
+    });
+  };
+
   return (
     <>
-      <View style={styles.card}>
+    <TouchableOpacity 
+        style={styles.card}
+        onPress={() => router.push({
+          pathname: '/submit',
+          params: { location: 'KSL' }
+        })}
+        >
         <ImageBackground
           source={require("../../../assets/ksl.png")}
           style={styles.cardBackground}
@@ -14,8 +30,14 @@ export default function HomeScreen() {
             <View style={styles.statusDot} />
           </View>
         </ImageBackground>
-      </View>
-      <View style={styles.card}>
+      </TouchableOpacity>
+      <TouchableOpacity 
+        style={styles.card}
+        onPress={() => router.push({
+          pathname: '/submit',
+          params: { location: 'Tink' }
+        })}
+      >
         <ImageBackground
           source={require("../../../assets/tink.png")}
           style={styles.cardBackground}
@@ -24,10 +46,16 @@ export default function HomeScreen() {
           <View style={styles.overlay}>
             <Text style={styles.locationName}>Tink</Text>
             <View style={styles.statusDot} />
-          </View>
+            </View>
         </ImageBackground>
-      </View>
-      <View style={styles.card}>
+      </TouchableOpacity>
+      <TouchableOpacity 
+        style={styles.card}
+        onPress={() => router.push({
+          pathname: '/submit',
+          params: { location: 'PBL' }
+        })}
+      >
         <ImageBackground
           source={require("../../../assets/pbl.png")}
           style={styles.cardBackground}
@@ -38,8 +66,14 @@ export default function HomeScreen() {
             <View style={styles.statusDot} />
           </View>
         </ImageBackground>
-      </View>
-      <View style={styles.card}>
+      </TouchableOpacity>
+      <TouchableOpacity 
+        style={styles.card}
+        onPress={() => router.push({
+          pathname: '/submit',
+          params: { location: 'Tomlinson' }
+        })}
+      >
         <ImageBackground
           source={require("../../../assets/tomlinson.png")}
           style={styles.cardBackground}
@@ -50,7 +84,7 @@ export default function HomeScreen() {
             <View style={styles.statusDot} />
           </View>
         </ImageBackground>
-      </View>
+      </TouchableOpacity>
     </>
   );
 }
@@ -73,7 +107,8 @@ const styles = StyleSheet.create({
   },
   cardBackground: {
     flex: 1,
-    justifyContent: "center",
+    width: '100%',
+    justifyContent: "center"
   },
   statusDot: {
     position: "absolute",
