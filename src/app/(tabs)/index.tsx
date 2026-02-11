@@ -1,8 +1,11 @@
+import { useFocusEffect } from "expo-router";
+import { useCallback } from "react";
+
 import { useEffect, useState } from "react";
 import { supabase } from "../../lib/supabase";
 
 import { useRouter } from 'expo-router';
-import { StyleSheet, ScrollView } from "react-native";
+import { StyleSheet, ScrollView, RefreshControl } from "react-native";
 
 import LocationCard from "../../components/LocationCard";
 import { spots } from '../../config/studySpots';
@@ -17,6 +20,8 @@ export default function HomeScreen() {
   const [statusBySpotId, setStatusBySpotId] = useState<Record<string, Status>>(() =>
     Object.fromEntries(spots.map((s) => [s.id, "unknown" as Status]))
   );
+
+  const [refreshing, setRefreshing] = useState(false);
 
   const fetchStatuses = async () => {
     const { data, error } = await supabase
@@ -36,7 +41,6 @@ export default function HomeScreen() {
       const spotId = row.spot_id as string;
       const status = row.status as Status;
 
-      // because newest-first, first time we see a spot is the latest
       if (!latest[spotId]) {
         if (status === "empty" || status === "normal" || status === "packed") {
           latest[spotId] = status;
@@ -49,12 +53,25 @@ export default function HomeScreen() {
     setStatusBySpotId((prev) => ({ ...prev, ...latest }));
   };
 
-  useEffect(() => {
-    fetchStatuses();
-  }, []);
+  const onRefresh = async () => {
+    setRefreshing(true);
+    await fetchStatuses();
+    setRefreshing(false);
+  };
+
+  useFocusEffect(
+    useCallback(() => {
+      fetchStatuses();
+    }, [])
+  );
 
   return (
-    <ScrollView contentContainerStyle={styles.container}>
+    <ScrollView
+      contentContainerStyle={styles.container}
+      refreshControl={
+        <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
+      }
+    >
       {spots.map((spot) => (
         <LocationCard
           key={spot.id}

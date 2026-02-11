@@ -7,6 +7,10 @@
 //   );
 // }
 import React, { useState } from 'react';
+import { supabase } from "../../lib/supabase";
+import type { Status } from "../../types/status";
+import { useLocalSearchParams, useRouter } from "expo-router";
+
 import {
   View,
   Text,
@@ -20,49 +24,65 @@ import {
 import { RadioButton } from 'react-native-paper';
 
 export default function SubmitScreen() {
-  
-  const [selectedOption, setSelectedOption] = useState('option1');
+  const router = useRouter();
+  const { location } = useLocalSearchParams<{ location: string }>();
 
-  const handleSubmit = () => {
- 
-    const busyLevel = selectedOption === 'option1' ? 'Empty' : 
-                      selectedOption === 'option2' ? 'Normal' : 'Packed';
+  const [selectedStatus, setSelectedStatus] = useState<Status>("empty");
+  const [submitting, setSubmitting] = useState(false);
 
-    console.log('Form submitted:', {
-      busyLevel: busyLevel,
-      selectedValue: selectedOption
-    });
+  const handleSubmit = async () => {
+    if (!location) {
+      Alert.alert("Error", "No location was provided.");
+      return;
+    }
 
-    Alert.alert('Success', `You reported the location as: ${busyLevel}`);
+    setSubmitting(true);
 
+    const { error } = await supabase.from("study_spot_status").insert([
+      {
+        spot_id: location,
+        status: selectedStatus,
+        user_id: "dev-user-123",
+      },
+    ]);
+
+    setSubmitting(false);
+
+    if (error) {
+      console.error("Insert error:", error);
+      Alert.alert("Error", error.message);
+      return;
+    }
+
+    Alert.alert("Success", `Reported ${location} as ${selectedStatus}`, [
+      { text: "OK", onPress: () => router.back() },
+    ]);
   };
 
   return (
     <ScrollView style={styles.container} contentContainerStyle={styles.scrollView}>
       <Text style={styles.title}>Study Location Status</Text>
+      <View style={styles.inputContainer}>
+        <Text style={styles.label}>How busy is this location?</Text>
+        <RadioButton.Group onValueChange={(value) => setSelectedStatus(value as Status)} value={selectedStatus}>
+          <View style={styles.radioOption}>
+            <RadioButton value="empty" />
+            <Text style={styles.radioLabel}>Empty</Text>
+          </View>
+          <View style={styles.radioOption}>
+            <RadioButton value="normal" />
+            <Text style={styles.radioLabel}>Normal</Text>
+          </View>
+          <View style={styles.radioOption}>
+            <RadioButton value="packed" />
+            <Text style={styles.radioLabel}>Packed</Text>
+          </View>
+        </RadioButton.Group>
+      </View>
 
-         <View style={styles.inputContainer}>
-          <Text style={styles.label}>How busy is this location?</Text>
-          <RadioButton.Group onValueChange={value => setSelectedOption(value)} value={selectedOption}>
-            <View style={styles.radioOption}>
-              <RadioButton value="empty" />
-              <Text style={styles.radioLabel}>Empty</Text>
-            </View>
-            <View style={styles.radioOption}>
-              <RadioButton value="normal" />
-              <Text style={styles.radioLabel}>Normal</Text>
-            </View>
-            <View style={styles.radioOption}>
-              <RadioButton value="packed" />
-              <Text style={styles.radioLabel}>Packed</Text>
-            </View>
-          </RadioButton.Group>
-        </View>
-
-        {/* Submit Button */}
-        <TouchableOpacity style={styles.button} onPress={() => handleSubmit()}>
-          <Text style={styles.buttonText}>Submit</Text>
-        </TouchableOpacity>
+      <TouchableOpacity style={[styles.button, submitting && styles.buttonDisabled]} onPress={() => handleSubmit()} disabled={submitting}>
+        <Text style={styles.buttonText}>{submitting ? "Submitting..." : "Submit"}</Text>
+      </TouchableOpacity>
     </ScrollView>
   );
 }
@@ -72,7 +92,7 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: '#f5f5f5',
   },
-  scrollView: { 
+  scrollView: {
     padding: 20,
   },
   title: {
@@ -108,7 +128,7 @@ const styles = StyleSheet.create({
     fontSize: 16,
     backgroundColor: '#fff',
   },
-   radioOption: {
+  radioOption: {
     flexDirection: 'row',
     alignItems: 'center',
     marginBottom: 8,
@@ -129,4 +149,7 @@ const styles = StyleSheet.create({
     fontSize: 18,
     fontWeight: '600',
   },
+  buttonDisabled: {
+    opacity: 0.6
+  }
 });
