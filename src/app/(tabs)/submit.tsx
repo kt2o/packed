@@ -7,7 +7,7 @@
 //   );
 // }
 import React, { useState } from 'react';
-import { supabase } from "../../lib/supabase";
+import { supabase } from "../../lib/supabase-client";
 import type { Status } from "../../types/status";
 import { useLocalSearchParams, useRouter } from "expo-router";
 
