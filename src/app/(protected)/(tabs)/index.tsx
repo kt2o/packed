@@ -2,14 +2,14 @@ import { useFocusEffect } from "expo-router";
 import { useCallback } from "react";
 
 import { useEffect, useState } from "react";
-import { useSupabase } from "../../lib/supabase-client";
+import { useSupabase } from "../../../lib/supabase-client";
 
 import { useRouter } from "expo-router";
 import { StyleSheet, ScrollView, RefreshControl } from "react-native";
 
-import LocationCard from "../../components/LocationCard";
-import { spots } from "../../config/studySpots";
-import type { Status } from "../../types/status";
+import LocationCard from "../../../components/LocationCard";
+import { spots } from "../../../config/studySpots";
+import type { Status } from "../../../types/status";
 import React from "react";
 
 export default function HomeScreen() {
