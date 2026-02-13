@@ -1,95 +1,100 @@
-import React from "react";
-import { Text, View, StyleSheet, ImageBackground } from "react-native";
+import { useFocusEffect } from "expo-router";
+import { useCallback } from "react";
+
+import { useEffect, useState } from "react";
+import { useSupabase } from "../../lib/supabase-client";
+
+import { useRouter } from "expo-router";
+import { StyleSheet, ScrollView, RefreshControl } from "react-native";
+
+import LocationCard from "../../components/LocationCard";
+import { spots } from "../../config/studySpots";
+import type { Status } from "../../types/status";
 
 export default function HomeScreen() {
+  const router = useRouter();
+  const supabase = useSupabase();
+  const initialStatus: Record<string, Status> = Object.fromEntries(
+    spots.map((s) => [s.id, "unknown" as Status])
+  );
+
+  const [statusBySpotId, setStatusBySpotId] = useState<Record<string, Status>>(
+    () => Object.fromEntries(spots.map((s) => [s.id, "unknown" as Status]))
+  );
+
+  const [refreshing, setRefreshing] = useState(false);
+
+  const fetchStatuses = async () => {
+    const { data, error } = await supabase
+      .from("study_spot_status")
+      .select("spot_id,status,created_at")
+      .order("created_at", { ascending: false })
+      .limit(200);
+
+    if (error) {
+      console.error("Error fetching statuses:", error);
+      return;
+    }
+
+    const latest: Record<string, Status> = {};
+
+    for (const row of data ?? []) {
+      const spotId = row.spot_id as string;
+      const status = row.status as Status;
+
+      if (!latest[spotId]) {
+        if (status === "empty" || status === "normal" || status === "packed") {
+          latest[spotId] = status;
+        } else {
+          latest[spotId] = "unknown";
+        }
+      }
+    }
+
+    setStatusBySpotId((prev) => ({ ...prev, ...latest }));
+  };
+
+  const onRefresh = async () => {
+    setRefreshing(true);
+    await fetchStatuses();
+    setRefreshing(false);
+  };
+
+  useFocusEffect(
+    useCallback(() => {
+      fetchStatuses();
+    }, [])
+  );
+
   return (
-    <>
-      <View style={styles.card}>
-        <ImageBackground
-          source={require("../../../assets/ksl.png")}
-          style={styles.cardBackground}
-          resizeMode="cover"
-        >
-          <View style={styles.overlay}>
-            <Text style={styles.locationName}>KSL</Text>
-            <View style={styles.statusDot} />
-          </View>
-        </ImageBackground>
-      </View>
-      <View style={styles.card}>
-        <ImageBackground
-          source={require("../../../assets/tink.png")}
-          style={styles.cardBackground}
-          resizeMode="cover"
-        >
-          <View style={styles.overlay}>
-            <Text style={styles.locationName}>Tink</Text>
-            <View style={styles.statusDot} />
-          </View>
-        </ImageBackground>
-      </View>
-      <View style={styles.card}>
-        <ImageBackground
-          source={require("../../../assets/pbl.png")}
-          style={styles.cardBackground}
-          resizeMode="cover"
-        >
-          <View style={styles.overlay}>
-            <Text style={styles.locationName}>PBL</Text>
-            <View style={styles.statusDot} />
-          </View>
-        </ImageBackground>
-      </View>
-      <View style={styles.card}>
-        <ImageBackground
-          source={require("../../../assets/tomlinson.png")}
-          style={styles.cardBackground}
-          resizeMode="cover"
-        >
-          <View style={styles.overlay}>
-            <Text style={styles.locationName}>Tomlinson</Text>
-            <View style={styles.statusDot} />
-          </View>
-        </ImageBackground>
-      </View>
-    </>
+    <ScrollView
+      contentContainerStyle={styles.container}
+      refreshControl={
+        <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
+      }
+    >
+      {spots.map((spot) => (
+        <LocationCard
+          key={spot.id}
+          id={spot.id}
+          displayName={spot.displayName}
+          image={spot.image}
+          status={statusBySpotId[spot.id] ?? "unknown"}
+          onPress={() =>
+            router.push({
+              pathname: "/submit",
+              params: { location: spot.id },
+            })
+          }
+        />
+      ))}
+    </ScrollView>
   );
 }
 
 const styles = StyleSheet.create({
-  card: {
-    height: "20%",
-    width: "100%",
-    paddingTop: 16,
-    paddingHorizontal: 16,
-    overflow: "hidden",
-  },
-  locationName: {
-    position: "absolute",
-    fontSize: 22,
-    fontWeight: "700",
-    color: "white",
-    top: 12,
-    left: 12,
-  },
-  cardBackground: {
-    flex: 1,
-    justifyContent: "center",
-  },
-  statusDot: {
-    position: "absolute",
-    bottom: 12,
-    right: 12,
-    width: 14,
-    height: 14,
-    borderRadius: 7,
-    backgroundColor: "green",
-    borderWidth: 2,
-    borderColor: "white",
-  },
-  overlay: {
-    flex: 1,
-    paddingHorizontal: 16,
-    backgroundColor: "rgba(0,0,0,0.25)",
+  container: {
+    padding: 16,
+    gap: 14,
   },
 });
