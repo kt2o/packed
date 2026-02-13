@@ -1,6 +1,7 @@
 import { Stack } from "expo-router";
 import { ClerkProvider } from "@clerk/clerk-expo";
 import { Provider as PaperProvider } from "react-native-paper";
+import React from "react";
 
 export default function RootLayout() {
   return (
