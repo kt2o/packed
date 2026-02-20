@@ -51,7 +51,7 @@ const styles = StyleSheet.create({
         width: "100%",
         marginBottom: 14,
         overflow: "hidden",
-        borderRadius: 16,
+        borderRadius: 12,
     },
     locationName: {
         position: "absolute",
