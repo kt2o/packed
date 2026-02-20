@@ -1,29 +1,37 @@
-import React, { useState } from "react";
+import React, { useMemo, useState } from "react";
 import { supabase } from "../../../lib/supabase-client";
 import type { Status } from "../../../types/status";
 import { useLocalSearchParams, useRouter } from "expo-router";
+import { spots } from "src/config/studySpots";
 
 import {
   View,
   Text,
-  TextInput,
   TouchableOpacity,
   StyleSheet,
   ScrollView,
-  Alert,
+  Alert
 } from "react-native";
 
 import { RadioButton } from "react-native-paper";
+import LocationDropDown from "../../../components/LocationDropDown";
 
 export default function SubmitScreen() {
   const router = useRouter();
-  const { location } = useLocalSearchParams<{ location: string }>();
 
+  const [selectedSpot, setSelectedSpot] = useState<string>("");
   const [selectedStatus, setSelectedStatus] = useState<Status>("empty");
   const [submitting, setSubmitting] = useState(false);
 
+  const locations = useMemo(() => {
+  return spots.map((spot) => ({
+    label: spot.displayName,
+    value: String(spot.id), 
+  }));
+}, [spots]);
+
   const handleSubmit = async () => {
-    if (!location) {
+    if (!selectedSpot) {
       Alert.alert("Error", "No location was provided.");
       return;
     }
@@ -32,7 +40,7 @@ export default function SubmitScreen() {
 
     const { error } = await supabase.from("study_spot_status").insert([
       {
-        spot_id: location,
+        spot_id: selectedSpot,
         status: selectedStatus,
         user_id: "dev-user-123",
       },
@@ -46,7 +54,7 @@ export default function SubmitScreen() {
       return;
     }
 
-    Alert.alert("Success", `Reported ${location} as ${selectedStatus}`, [
+    Alert.alert("Success", `Reported ${selectedSpot} as ${selectedStatus}`, [
       { text: "OK", onPress: () => router.back() },
     ]);
   };
@@ -57,6 +65,7 @@ export default function SubmitScreen() {
       contentContainerStyle={styles.scrollView}
     >
       <Text style={styles.title}>Study Location Status</Text>
+      <LocationDropDown label={"Location"} data={locations} value={"selectedSpot"} onChange={setSelectedSpot} placeholder="Where are you?"></LocationDropDown>
       <View style={styles.inputContainer}>
         <Text style={styles.label}>How busy is this location?</Text>
         <RadioButton.Group
