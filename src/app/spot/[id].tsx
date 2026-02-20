@@ -37,18 +37,20 @@ export default function SpotScreen(){
   }
 
   }
-  //Get location
+  //Get spot location
+  const spotLat = Number(spot.lat);
+  const spotLng = Number(spot.lng);
+
+  //user location
   const location = await getCurrentLocation();
+  const userLat = location.coords.latitude;
+  const userLng = location.coords.longitude;
 
   //Get distance
-  const distance = getDistanceMeters(
-  location.coords.latitude,
-  location.coords.longitude,
-  spot.lat,
-  spot.lng
-  );
+  const distance = getDistanceMeters(userLat, userLng, spotLat, spotLng);
+  console.log("Distance:", distance);
 
- if (distance > spot.radius) {
+ if (isNaN(distance) || distance > spot.radius) {
  alert("You are not close enough to this study spot.");
  return;
  }
