@@ -1,3 +1,4 @@
+import React from "react";
 import { Modal, View, Text, Button } from "react-native";
 export function LocationPermissionModal({ visible, onAllow, onDeny }) {
   return (

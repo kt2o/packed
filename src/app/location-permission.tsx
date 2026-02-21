@@ -1,6 +1,7 @@
 import { View, Text, Button } from "react-native";
 import * as Location from "expo-location";
 import { useRouter } from "expo-router";
+import React from "react";
 
 export default function LocationPermissionScreen() {
   const router = useRouter();
@@ -9,9 +10,9 @@ export default function LocationPermissionScreen() {
     const { status } = await Location.requestForegroundPermissionsAsync();
 
     if (status === "granted") {
-     await Location.getCurrentPositionAsync({
-           accuracy: Location.Accuracy.Highest,
-         });
+      await Location.getCurrentPositionAsync({
+        accuracy: Location.Accuracy.Highest,
+      });
       router.replace("/home");
     } else {
       alert("Location is required to use check-in features.");
