@@ -1,7 +1,6 @@
 import { View, Button } from "react-native";
 import { useSupabase } from "../../../lib/supabase-client";
 import { useUser } from "@clerk/clerk-expo";
-import React from "react";
 
 export default function NotesPage() {
   const supabase = useSupabase();

@@ -1,7 +1,14 @@
 import { useSignUp } from "@clerk/clerk-expo";
 import { Link, useRouter } from "expo-router";
 import * as React from "react";
-import { Pressable, StyleSheet, TextInput, View, Text } from "react-native";
+import {
+  Pressable,
+  StyleSheet,
+  TextInput,
+  View,
+  Text,
+  Alert,
+} from "react-native";
 
 export default function Page() {
   const { isLoaded, signUp, setActive } = useSignUp();
@@ -71,6 +78,7 @@ export default function Page() {
       // See https://clerk.com/docs/guides/development/custom-flows/error-handling
       // for more info on error handling
       console.error(JSON.stringify(err, null, 2));
+      Alert.alert("Error", (err as Error).message);
     }
   };
 

@@ -7,7 +7,6 @@ import {
 } from "react-native";
 import { ImageSourcePropType } from "react-native";
 import type { Status } from "../types/status";
-import React from "react";
 
 const LocationCard = (props: {
   id: string;
