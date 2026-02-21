@@ -6,7 +6,7 @@ import {
 } from "react-native-paper";
 import { tokenCache } from "@clerk/clerk-expo/token-cache";
 import { useAuth } from "@clerk/clerk-expo";
-import React from "react";
+import SupabaseProvider from "src/providers/SupabaseProvider";
 
 function RootStack() {
   const { isSignedIn, isLoaded } = useAuth();
@@ -17,13 +17,15 @@ function RootStack() {
 
   return (
     <Stack screenOptions={{ headerShown: false }}>
-      <Stack.Protected guard={!isSignedIn}>
-        <Stack.Screen name="(auth)" />
-      </Stack.Protected>
+      <PaperProvider>
+        <Stack.Protected guard={!isSignedIn}>
+          <Stack.Screen name="(auth)" />
+        </Stack.Protected>
 
-      <Stack.Protected guard={!!isSignedIn}>
-        <Stack.Screen name="(protected)" />
-      </Stack.Protected>
+        <Stack.Protected guard={!!isSignedIn}>
+          <Stack.Screen name="(protected)" />
+        </Stack.Protected>
+      </PaperProvider>
     </Stack>
   );
 }
@@ -31,7 +33,9 @@ function RootStack() {
 export default function RootLayout() {
   return (
     <ClerkProvider tokenCache={tokenCache}>
-      <RootStack />
+      <SupabaseProvider>
+        <RootStack />
+      </SupabaseProvider>
     </ClerkProvider>
   );
 }

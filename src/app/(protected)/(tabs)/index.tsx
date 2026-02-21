@@ -10,7 +10,6 @@ import { StyleSheet, ScrollView, RefreshControl } from "react-native";
 import LocationCard from "../../../components/LocationCard";
 import { spots } from "../../../config/studySpots";
 import type { Status } from "../../../types/status";
-import React from "react";
 
 export default function HomeScreen() {
   const router = useRouter();

@@ -1,5 +1,4 @@
 import { Tabs } from "expo-router";
-import React from "react";
 import { Feather } from "@expo/vector-icons";
 import { useAuth } from "@clerk/clerk-expo";
 import { NativeTabs, Label } from "expo-router/unstable-native-tabs";
@@ -34,6 +33,14 @@ export default function TabLayout() {
         options={{
           title: "Submit",
           headerTitle: "Submit Location Status",
+          headerTintColor: "#6320c7",
+        }}
+      />
+      <Tabs.Screen
+        name="profile"
+        options={{
+          title: "Profile",
+          headerTitle: "",
           headerTintColor: "#6320c7",
         }}
       />
