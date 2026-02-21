@@ -10,7 +10,7 @@
   },
   "dependencies": {
     "@clerk/clerk-expo": "^2.19.25",
-    "@react-navigation/native": "^7.1.28",
+    "@react-navigation/native": "^7.1.8",
     "@stacks/cli": "^7.2.0",
     "@supabase/supabase-js": "^2.94.1",
     "expo": "~54.0.32",
@@ -25,6 +25,7 @@
     "react": "19.1.0",
     "react-dom": "19.1.0",
     "react-native": "0.81.5",
+    "react-native-element-dropdown": "^2.12.4",
     "react-native-gesture-handler": "~2.28.0",
     "react-native-paper": "^5.15.0",
     "react-native-safe-area-context": "~5.6.0",
