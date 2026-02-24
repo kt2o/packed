@@ -6,7 +6,7 @@ import {
 } from "react-native-paper";
 import { tokenCache } from "@clerk/clerk-expo/token-cache";
 import { useAuth } from "@clerk/clerk-expo";
-import SupabaseProvider from "src/providers/SupabaseProvider";
+import { SupabaseProvider } from "src/providers/SupabaseProvider";
 
 function RootStack() {
   const { isSignedIn, isLoaded } = useAuth();

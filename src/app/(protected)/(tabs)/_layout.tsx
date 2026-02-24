@@ -1,4 +1,7 @@
 import { Tabs } from "expo-router";
+import { Entypo } from "@expo/vector-icons";
+import Ionicons from "@expo/vector-icons/Ionicons";
+import FontAwesome5 from "@expo/vector-icons/FontAwesome5";
 
 export default function TabLayout() {
   return (
@@ -9,6 +12,9 @@ export default function TabLayout() {
           title: "Status",
           headerTitle: "Packed",
           headerTintColor: "#6320c7",
+          tabBarIcon: ({ color }) => (
+            <FontAwesome5 name="building" size={24} color={color} />
+          ),
         }}
       />
       <Tabs.Screen
@@ -17,6 +23,9 @@ export default function TabLayout() {
           title: "Submit",
           headerTitle: "Submit Location Status",
           headerTintColor: "#6320c7",
+          tabBarIcon: ({ color }) => (
+            <Entypo name="location" size={24} color={color} />
+          ),
         }}
       />
       <Tabs.Screen
@@ -25,6 +34,9 @@ export default function TabLayout() {
           title: "Profile",
           headerTitle: "",
           headerTintColor: "#6320c7",
+          tabBarIcon: ({ color }) => (
+            <Ionicons name="person" size={24} color={color} />
+          ),
         }}
       />
     </Tabs>

@@ -142,12 +142,6 @@ export default function Page() {
       >
         <Text style={styles.buttonText}>Continue</Text>
       </Pressable>
-      <View style={styles.linkContainer}>
-        <Text>Have an account? </Text>
-        <Link href="/sign-in">
-          <Text>Sign in</Text>
-        </Link>
-      </View>
     </View>
   );
 }

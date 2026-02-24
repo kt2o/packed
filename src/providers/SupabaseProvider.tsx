@@ -1,51 +1,40 @@
-import {
-  createContext,
-  PropsWithChildren,
-  useContext,
-  useEffect,
-  useState,
-} from "react";
-import { createClient, processLock } from "@supabase/supabase-js";
-import AsyncStorage from "@react-native-async-storage/async-storage";
-import { Platform } from "react-native";
+import { createClient } from "@supabase/supabase-js";
 import { useSession } from "@clerk/clerk-expo";
-import { SupabaseClient } from "@supabase/supabase-js";
+import { createContext, useContext, useMemo } from "react";
 
 const supabaseUrl = process.env.EXPO_PUBLIC_SUPABASE_URL!;
 const supabaseAnonKey = process.env.EXPO_PUBLIC_SUPABASE_ANON_KEY!;
 
-type SupabsaseContextType = {
-  supabase: SupabaseClient | null;
-};
+const SupabaseContext = createContext<any>(null);
 
-const SupabaseContext = createContext<SupabsaseContextType>({ supabase: null });
-
-export default function SupabaseProvider({ children }: PropsWithChildren) {
+export const SupabaseProvider = ({
+  children,
+}: {
+  children: React.ReactNode;
+}) => {
   const { session } = useSession();
-  const [supabase, setSupabase] = useState<SupabaseClient | null>(null);
 
-  useEffect(() => {
-    const newClient = createClient(supabaseUrl, supabaseAnonKey, {
-      auth: {
-        ...(Platform.OS !== "web" ? { storage: AsyncStorage } : {}),
-        autoRefreshToken: true,
-        persistSession: true,
-        detectSessionInUrl: false,
-        lock: processLock,
-      },
-      async accessToken() {
-        return session?.getToken() ?? null;
+  const supabase = useMemo(() => {
+    return createClient(supabaseUrl, supabaseAnonKey, {
+      global: {
+        fetch: async (url, options = {}) => {
+          // This tells Clerk to give us a token specifically for the 'supabase' template
+          const clerkToken = await session?.getToken({ template: "supabase" });
+
+          const headers = new Headers(options?.headers);
+          headers.set("Authorization", `Bearer ${clerkToken}`);
+
+          return fetch(url, { ...options, headers });
+        },
       },
     });
-
-    setSupabase(newClient);
   }, [session]);
 
   return (
-    <SupabaseContext.Provider value={{ supabase }}>
+    <SupabaseContext.Provider value={supabase}>
       {children}
     </SupabaseContext.Provider>
   );
-}
+};
 
 export const useSupabase = () => useContext(SupabaseContext);
