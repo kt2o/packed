@@ -1,7 +1,7 @@
-import React, { useMemo, useState } from "react";
+import { useMemo, useState } from "react";
 import { supabase } from "../../../lib/supabase-client";
 import type { Status } from "../../../types/status";
-import { useLocalSearchParams, useRouter } from "expo-router";
+import { useRouter } from "expo-router";
 import { spots } from "src/config/studySpots";
 
 import {
@@ -10,7 +10,7 @@ import {
   TouchableOpacity,
   StyleSheet,
   ScrollView,
-  Alert
+  Alert,
 } from "react-native";
 
 import { RadioButton } from "react-native-paper";
@@ -24,11 +24,11 @@ export default function SubmitScreen() {
   const [submitting, setSubmitting] = useState(false);
 
   const locations = useMemo(() => {
-  return spots.map((spot) => ({
-    label: spot.displayName,
-    value: String(spot.id), 
-  }));
-}, [spots]);
+    return spots.map((spot) => ({
+      label: spot.displayName,
+      value: String(spot.id),
+    }));
+  }, [spots]);
 
   const handleSubmit = async () => {
     if (!selectedSpot) {
@@ -65,7 +65,13 @@ export default function SubmitScreen() {
       contentContainerStyle={styles.scrollView}
     >
       <Text style={styles.title}>Study Location Status</Text>
-      <LocationDropDown label={"Location"} data={locations} value={"selectedSpot"} onChange={setSelectedSpot} placeholder="Where are you?"></LocationDropDown>
+      <LocationDropDown
+        label={"Location"}
+        data={locations}
+        value={"selectedSpot"}
+        onChange={setSelectedSpot}
+        placeholder="Where are you?"
+      ></LocationDropDown>
       <View style={styles.inputContainer}>
         <Text style={styles.label}>How busy is this location?</Text>
         <RadioButton.Group

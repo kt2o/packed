@@ -16,8 +16,8 @@ function RootStack() {
   }
 
   return (
-    <Stack screenOptions={{ headerShown: false }}>
-      <PaperProvider>
+    <PaperProvider>
+      <Stack screenOptions={{ headerShown: false }}>
         <Stack.Protected guard={!isSignedIn}>
           <Stack.Screen name="(auth)" />
         </Stack.Protected>
@@ -25,8 +25,8 @@ function RootStack() {
         <Stack.Protected guard={!!isSignedIn}>
           <Stack.Screen name="(protected)" />
         </Stack.Protected>
-      </PaperProvider>
-    </Stack>
+      </Stack>
+    </PaperProvider>
   );
 }
 

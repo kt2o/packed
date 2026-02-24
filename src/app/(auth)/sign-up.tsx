@@ -66,7 +66,7 @@ export default function Page() {
               return;
             }
 
-            router.replace("/");
+            // router.replace("/");
           },
         });
       } else {
@@ -112,7 +112,6 @@ export default function Page() {
 
   return (
     <View style={styles.container}>
-      <Text style={styles.title}>Sign up</Text>
       <Text style={styles.label}>Email address</Text>
       <TextInput
         style={styles.input}

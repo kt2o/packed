@@ -29,7 +29,8 @@ export default function Page() {
       if (signInAttempt.status === "complete") {
         await setActive({
           session: signInAttempt.createdSessionId,
-          navigate: async ({ session }) => {
+
+          /* navigate: async ({ session }) => {
             if (session?.currentTask) {
               // Check for tasks and navigate to custom UI to help users resolve them
               // See https://clerk.com/docs/guides/development/custom-flows/authentication/session-tasks
@@ -38,7 +39,7 @@ export default function Page() {
             }
 
             router.replace("/");
-          },
+          }, */
         });
       } else if (signInAttempt.status === "needs_second_factor") {
         // Check if email_code is a valid second factor
@@ -90,7 +91,7 @@ export default function Page() {
               return;
             }
 
-            router.replace("/");
+            // router.replace("/");
           },
         });
       } else {
@@ -132,7 +133,6 @@ export default function Page() {
 
   return (
     <View style={styles.container}>
-      <Text style={styles.title}>Sign in</Text>
       <Text style={styles.label}>Email address</Text>
       <TextInput
         style={styles.input}

@@ -7,8 +7,6 @@ import { getDistanceMeters } from "../../lib/distance";
 import * as Location from "expo-location";
 import { useRouter } from "expo-router";
 
-import React from "react";
-
 export default function SpotScreen() {
   console.log("Spot Details screen mounted");
   const router = useRouter();
@@ -16,30 +14,28 @@ export default function SpotScreen() {
   const supabase = useSupabase();
   const DEV_MODE = true;
 
-  // Replace this with your actual dev user UUID from Supabase
   const DEV_USER_ID = "6759bbaf-0fad-4c73-910f-1ee43570d3d1";
 
-
   const spot = spots.find((s) => s.id === id);
-
-  if (!spot) {
-    return <Text>Spot not found.</Text>;
-  }
 
   async function handleCheckin() {
     //Check for Location
     const { status } = await Location.getForegroundPermissionsAsync();
 
     if (status !== "granted") {
-
       //Ask for location again
-      const { status: newStatus } = await Location.requestForegroundPermissionsAsync();
+      const { status: newStatus } =
+        await Location.requestForegroundPermissionsAsync();
       if (newStatus !== "granted") {
         router.push("/location-permission");
         return;
       }
-
     }
+
+    if (!spot) {
+      return <Text>Spot not found.</Text>;
+    }
+
     //Get spot location
     const spotLat = Number(spot.lat);
     const spotLng = Number(spot.lng);
@@ -81,22 +77,17 @@ export default function SpotScreen() {
       updated_at: new Date().toISOString(),
     });
 
-
     alert("Checked in successfully!");
     router.replace({
       pathname: "/submit",
       params: { location: spot.id },
     });
-
-
   }
   return (
     <View style={styles.screen}>
       <View style={styles.card}>
         <Text style={styles.title}>{spot.displayName}</Text>
-        <Text style={styles.subtitle}>
-          Radius: {spot.radius} meters
-        </Text>
+        <Text style={styles.subtitle}>Radius: {spot.radius} meters</Text>
         <Pressable
           onPress={handleCheckin}
           style={({ pressed }) => [
@@ -109,14 +100,16 @@ export default function SpotScreen() {
 
         <Pressable
           onPress={() => router.back()}
-          style={({ pressed }) => [styles.secondaryButton, pressed && { opacity: 0.7 }]}
+          style={({ pressed }) => [
+            styles.secondaryButton,
+            pressed && { opacity: 0.7 },
+          ]}
         >
           <Text style={styles.secondaryButtonText}>← Back to Home</Text>
         </Pressable>
       </View>
     </View>
   );
-
 }
 
 const styles = StyleSheet.create({
@@ -185,21 +178,3 @@ const styles = StyleSheet.create({
     fontWeight: "600",
   },
 });
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-

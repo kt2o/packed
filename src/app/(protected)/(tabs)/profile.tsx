@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import { useState } from "react";
 import {
   View,
   Text,
@@ -9,6 +9,7 @@ import {
   ScrollView,
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
+import { SignOutButton } from "src/components/sign-out-button";
 
 export default function ProfileScreen() {
   // Static placeholder facts to build off of later
@@ -28,9 +29,7 @@ export default function ProfileScreen() {
       <ScrollView contentContainerStyle={styles.container}>
         {/* Header - Settings Button */}
         <View style={styles.header}>
-          <TouchableOpacity style={styles.iconButton}>
-            <Ionicons name="settings-outline" size={28} color="#000000" />
-          </TouchableOpacity>
+          <SignOutButton />
         </View>
 
         {/* Top Section: Profile Picture, Name, Bio */}

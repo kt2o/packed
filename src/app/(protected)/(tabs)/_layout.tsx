@@ -1,25 +1,8 @@
 import { Tabs } from "expo-router";
-import { Feather } from "@expo/vector-icons";
-import { useAuth } from "@clerk/clerk-expo";
-import { NativeTabs, Label } from "expo-router/unstable-native-tabs";
 
 export default function TabLayout() {
-  const { signOut } = useAuth();
   return (
-    <Tabs
-      screenOptions={{
-        tabBarActiveTintColor: "#6320c7",
-        headerRight: () => (
-          <Feather
-            name="log-out"
-            size={22}
-            color="black"
-            style={{ paddingRight: 10 }}
-            onPress={() => signOut()}
-          />
-        ),
-      }}
-    >
+    <Tabs>
       <Tabs.Screen
         name="index"
         options={{
