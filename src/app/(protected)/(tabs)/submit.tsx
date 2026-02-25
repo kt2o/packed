@@ -1,7 +1,7 @@
 import { useMemo, useState } from "react";
 import { supabase } from "../../../lib/supabase-client";
 import type { Status } from "../../../types/status";
-import { useRouter } from "expo-router";
+import { useRouter, useLocalSearchParams } from "expo-router";
 import { spots } from "src/config/studySpots";
 
 import {
@@ -19,7 +19,8 @@ import LocationDropDown from "../../../components/LocationDropDown";
 export default function SubmitScreen() {
   const router = useRouter();
 
-  const [selectedSpot, setSelectedSpot] = useState<string>("");
+  const { location } = useLocalSearchParams();
+  const [selectedSpot, setSelectedSpot] = useState<string>(location as string ?? "");
   const [selectedStatus, setSelectedStatus] = useState<Status>("empty");
   const [submitting, setSubmitting] = useState(false);
 
@@ -65,31 +66,31 @@ export default function SubmitScreen() {
       contentContainerStyle={styles.scrollView}
     >
       <Text style={styles.title}>Study Location Status</Text>
-      <LocationDropDown
+      {/* <LocationDropDown
         label={"Location"}
         data={locations}
         value={"selectedSpot"}
         onChange={setSelectedSpot}
         placeholder="Where are you?"
-      ></LocationDropDown>
+      ></LocationDropDown> */}
       <View style={styles.inputContainer}>
         <Text style={styles.label}>How busy is this location?</Text>
         <RadioButton.Group
           onValueChange={(value) => setSelectedStatus(value as Status)}
           value={selectedStatus}
         >
-          <View style={styles.radioOption}>
+          <TouchableOpacity style={styles.radioOption} onPress={() => setSelectedStatus("empty")}>
             <RadioButton value="empty" />
             <Text style={styles.radioLabel}>Empty</Text>
-          </View>
-          <View style={styles.radioOption}>
+          </TouchableOpacity>
+          <TouchableOpacity style={styles.radioOption} onPress={() => setSelectedStatus("normal")}>
             <RadioButton value="normal" />
             <Text style={styles.radioLabel}>Normal</Text>
-          </View>
-          <View style={styles.radioOption}>
+          </TouchableOpacity>
+          <TouchableOpacity style={styles.radioOption} onPress={() => setSelectedStatus("packed")}>
             <RadioButton value="packed" />
             <Text style={styles.radioLabel}>Packed</Text>
-          </View>
+          </TouchableOpacity>
         </RadioButton.Group>
       </View>
 
