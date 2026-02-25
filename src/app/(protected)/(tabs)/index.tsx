@@ -1,71 +1,61 @@
-import { useFocusEffect } from "expo-router";
-import { useCallback } from "react";
-
-import { useState } from "react";
-import { useSupabase } from "../../../lib/supabase-client";
-
-import { useRouter } from "expo-router";
+import { useEffect, useState, useCallback } from "react";
+import { useFocusEffect, useRouter } from "expo-router";
 import { StyleSheet, ScrollView, RefreshControl } from "react-native";
+import React from "react";
 
+import { useSupabase } from "../../../lib/supabase-client";
 import LocationCard from "../../../components/LocationCard";
 import { spots } from "../../../config/studySpots";
-import type { Status } from "../../../types/status";
-import React from "react";
+
+function getStatus(count: number, capacity: number) {
+  const ratio = count / capacity;
+  if (ratio >= 1) return "full";
+  if (ratio >= 0.7) return "busy";
+  if (ratio >= 0.3) return "moderate";
+  return "empty";
+}
 
 export default function HomeScreen() {
   const router = useRouter();
   const supabase = useSupabase();
-  const initialStatus: Record<string, Status> = Object.fromEntries(
-    spots.map((s) => [s.id, "unknown" as Status])
-  );
 
-  const [statusBySpotId, setStatusBySpotId] = useState<Record<string, Status>>(
-    () => Object.fromEntries(spots.map((s) => [s.id, "unknown" as Status]))
-  );
-
+  const [spotsWithStatus, setSpotsWithStatus] = useState([]);
   const [refreshing, setRefreshing] = useState(false);
 
-  const fetchStatuses = async () => {
-    const { data, error } = await supabase
-      .from("study_spot_status")
-      .select("spot_id,status,created_at")
-      .order("created_at", { ascending: false })
-      .limit(200);
+  async function fetchStudySpotStatus() {
+    const { data: counts, error } = await supabase
+      .from("spot_counts")
+      .select("*");
 
     if (error) {
-      console.error("Error fetching statuses:", error);
+      console.error(error);
       return;
     }
 
-    const latest: Record<string, Status> = {};
+    const merged = spots.map((spot) => {
+      const count =
+        counts?.find((c) => c.spot_id === spot.id)?.user_count ?? 0;
 
-    for (const row of data ?? []) {
-      const spotId = row.spot_id as string;
-      const status = row.status as Status;
+      return {
+        ...spot,
+        count,
+        capacity: spot.capacity,
+        status: getStatus(count, spot.capacity),
+      };
+    });
 
-      if (!latest[spotId]) {
-        if (status === "empty" || status === "normal" || status === "packed") {
-          latest[spotId] = status;
-        } else {
-          latest[spotId] = "unknown";
-        }
-      }
-    }
+    setSpotsWithStatus(merged);
+  }
 
-    setStatusBySpotId((prev) => ({ ...prev, ...latest }));
-  };
+  useEffect(() => {
+    fetchStudySpotStatus();
+  }, []);
 
   const onRefresh = async () => {
     setRefreshing(true);
-    await fetchStatuses();
+    await fetchStudySpotStatus();
     setRefreshing(false);
   };
-
-  useFocusEffect(
-    useCallback(() => {
-      fetchStatuses();
-    }, [])
-  );
 
   return (
     <ScrollView
@@ -74,13 +64,15 @@ export default function HomeScreen() {
         <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
       }
     >
-      {spots.map((spot) => (
+      {spotsWithStatus.map((spot) => (
         <LocationCard
           key={spot.id}
           id={spot.id}
           displayName={spot.displayName}
           image={spot.image}
-          status={statusBySpotId[spot.id] ?? "unknown"}
+          status={spot.status}
+          count={spot.count}
+          capacity={spot.capacity}
           onPress={() =>
             router.push({
               pathname: "/spot/[id]",

@@ -40,6 +40,7 @@ export default function SpotScreen() {
     const spotLat = Number(spot.lat);
     const spotLng = Number(spot.lng);
 
+
     //user location
     const location = await getCurrentLocation();
     const userLat = location.coords.latitude;
@@ -54,28 +55,38 @@ export default function SpotScreen() {
       return;
     }
 
-    //Pull user
-    let userId;
-    if (DEV_MODE) {
-      userId = DEV_USER_ID;
-    } else {
-      const {
-        data: { user },
-      } = await supabase.auth.getUser();
-      if (!user) {
-        alert("You must be logged in to check in.");
-        return;
-      }
-      userId = user.id;
-    }
-    //update supabase
-    await supabase.from("locations").insert({
-      user_id: userId,
-      spot_id: spot.id,
-      lat: location.coords.latitude,
-      lng: location.coords.longitude,
-      updated_at: new Date().toISOString(),
-    });
+
+ //Pull user
+ let userId;
+ if (DEV_MODE) {
+   userId = DEV_USER_ID;
+ } else{
+  const {
+   data: {user},
+  } = await supabase.auth.getUser();
+ if (!user) {
+   alert("You must be logged in to check in.");
+   return;
+   }
+   userId = user.id;
+}
+  //update supabase
+  const { error } = await supabase
+  .from("locations")
+  .insert({
+  user_id: userId,
+  spot_id: spot.id,
+  lat: location.coords.latitude,
+  lng: location.coords.longitude,
+  updated_at: new Date().toISOString(),
+  });
+
+
+  if (error) {
+  console.log("Insert error:", error);
+  alert("Could not check in.");
+  return;
+  }
 
     alert("Checked in successfully!");
     router.replace({

@@ -1,1 +1,1 @@
-export type Status = "empty" | "normal" | "packed" | "unknown";
+export type Status = "empty" | "normal" | "packed" | "full"|"unknown";
