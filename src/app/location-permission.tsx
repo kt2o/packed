@@ -13,10 +13,14 @@ export default function LocationPermissionScreen() {
       await Location.getCurrentPositionAsync({
         accuracy: Location.Accuracy.Highest,
       });
-      router.replace("/home");
+      router.replace("/(protected)/(tabs)");
     } else {
       alert("Location is required to use check-in features.");
     }
+  }
+
+  function skip() {
+    router.replace("/(protected)/(tabs)"); // allow browsing without location
   }
 
   return (
@@ -30,6 +34,10 @@ export default function LocationPermissionScreen() {
       </Text>
 
       <Button title="Allow Location Access" onPress={requestPermission} />
+
+      <View style={{ height: 16 }} />
+
+      <Button title="No Thanks" onPress={skip} />
     </View>
   );
 }
