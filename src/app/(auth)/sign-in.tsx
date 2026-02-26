@@ -2,55 +2,42 @@ import { useSignIn } from "@clerk/clerk-expo";
 import type { EmailCodeFactor } from "@clerk/types";
 import { Link, useRouter } from "expo-router";
 import * as React from "react";
-import { Pressable, StyleSheet, TextInput, View, Text } from "react-native";
+import {
+  Pressable,
+  StyleSheet,
+  TextInput,
+  View,
+  Text,
+  KeyboardAvoidingView,
+  Platform,
+  ScrollView,
+  SafeAreaView,
+} from "react-native";
 
 export default function Page() {
   const { signIn, setActive, isLoaded } = useSignIn();
   const router = useRouter();
 
-  const [emailAddress, setEmailAddress] = React.useState("");
+  const [identifier, setIdentifier] = React.useState("");
   const [password, setPassword] = React.useState("");
   const [code, setCode] = React.useState("");
   const [showEmailCode, setShowEmailCode] = React.useState(false);
 
-  // Handle the submission of the sign-in form
   const onSignInPress = React.useCallback(async () => {
     if (!isLoaded) return;
-
-    // Start the sign-in process using the email and password provided
     try {
       const signInAttempt = await signIn.create({
-        identifier: emailAddress,
+        identifier: identifier,
         password,
       });
 
-      // If sign-in process is complete, set the created session as active
-      // and redirect the user
       if (signInAttempt.status === "complete") {
-        await setActive({
-          session: signInAttempt.createdSessionId,
-
-          /* navigate: async ({ session }) => {
-            if (session?.currentTask) {
-              // Check for tasks and navigate to custom UI to help users resolve them
-              // See https://clerk.com/docs/guides/development/custom-flows/authentication/session-tasks
-              console.log(session?.currentTask);
-              return;
-            }
-
-            router.replace("/");
-          }, */
-        });
+        await setActive({ session: signInAttempt.createdSessionId });
       } else if (signInAttempt.status === "needs_second_factor") {
-        // Check if email_code is a valid second factor
-        // This is required when Client Trust is enabled and the user
-        // is signing in from a new device.
-        // See https://clerk.com/docs/guides/secure/client-trust
         const emailCodeFactor = signInAttempt.supportedSecondFactors?.find(
           (factor): factor is EmailCodeFactor =>
             factor.strategy === "email_code"
         );
-
         if (emailCodeFactor) {
           await signIn.prepareSecondFactor({
             strategy: "email_code",
@@ -59,21 +46,15 @@ export default function Page() {
           setShowEmailCode(true);
         }
       } else {
-        // If the status is not complete, check why. User may need to
-        // complete further steps.
         console.error(JSON.stringify(signInAttempt, null, 2));
       }
     } catch (err) {
-      // See https://clerk.com/docs/guides/development/custom-flows/error-handling
-      // for more info on error handling
       console.error(JSON.stringify(err, null, 2));
     }
-  }, [isLoaded, signIn, setActive, router, emailAddress, password]);
+  }, [isLoaded, signIn, setActive, router, identifier, password]);
 
-  // Handle the submission of the email verification code
   const onVerifyPress = React.useCallback(async () => {
     if (!isLoaded) return;
-
     try {
       const signInAttempt = await signIn.attemptSecondFactor({
         strategy: "email_code",
@@ -81,19 +62,7 @@ export default function Page() {
       });
 
       if (signInAttempt.status === "complete") {
-        await setActive({
-          session: signInAttempt.createdSessionId,
-          navigate: async ({ session }) => {
-            if (session?.currentTask) {
-              // Check for tasks and navigate to custom UI to help users resolve them
-              // See https://clerk.com/docs/guides/development/custom-flows/authentication/session-tasks
-              console.log(session?.currentTask);
-              return;
-            }
-
-            // router.replace("/");
-          },
-        });
+        await setActive({ session: signInAttempt.createdSessionId });
       } else {
         console.error(JSON.stringify(signInAttempt, null, 2));
       }
@@ -102,125 +71,206 @@ export default function Page() {
     }
   }, [isLoaded, signIn, setActive, router, code]);
 
-  // Display email code verification form
   if (showEmailCode) {
     return (
-      <View style={styles.container}>
-        <Text style={styles.title}>Verify your email</Text>
-        <Text style={styles.description}>
-          A verification code has been sent to your email.
-        </Text>
-        <TextInput
-          style={styles.input}
-          value={code}
-          placeholder="Enter verification code"
-          placeholderTextColor="#666666"
-          onChangeText={(code) => setCode(code)}
-          keyboardType="numeric"
-        />
-        <Pressable
-          style={({ pressed }) => [
-            styles.button,
-            pressed && styles.buttonPressed,
-          ]}
-          onPress={onVerifyPress}
+      <SafeAreaView style={styles.mainBackground}>
+        <KeyboardAvoidingView
+          style={{ flex: 1 }}
+          behavior={Platform.OS === "ios" ? "padding" : "height"}
         >
-          <Text style={styles.buttonText}>Verify</Text>
-        </Pressable>
-      </View>
+          <ScrollView contentContainerStyle={styles.scrollContainer}>
+            <Text style={styles.brandTitle}>Packed</Text>
+            <View style={styles.card}>
+              <Text style={styles.title}>Verify your email</Text>
+              <Text style={styles.description}>
+                A verification code has been sent to your email.
+              </Text>
+              <TextInput
+                style={styles.input}
+                value={code}
+                placeholder="Enter verification code"
+                placeholderTextColor="#A0A0A0"
+                onChangeText={(code) => setCode(code)}
+                keyboardType="numeric"
+              />
+              <Pressable
+                style={({ pressed }) => [
+                  styles.button,
+                  pressed && styles.buttonPressed,
+                ]}
+                onPress={onVerifyPress}
+              >
+                <Text style={styles.buttonText}>Verify</Text>
+              </Pressable>
+            </View>
+          </ScrollView>
+        </KeyboardAvoidingView>
+      </SafeAreaView>
     );
   }
 
   return (
-    <View style={styles.container}>
-      <Text style={styles.label}>Email address</Text>
-      <TextInput
-        style={styles.input}
-        autoCapitalize="none"
-        value={emailAddress}
-        placeholder="Enter email"
-        placeholderTextColor="#666666"
-        onChangeText={(emailAddress) => setEmailAddress(emailAddress)}
-        keyboardType="email-address"
-      />
-      <Text style={styles.label}>Password</Text>
-      <TextInput
-        style={styles.input}
-        value={password}
-        placeholder="Enter password"
-        placeholderTextColor="#666666"
-        secureTextEntry={true}
-        onChangeText={(password) => setPassword(password)}
-      />
-      <Pressable
-        style={({ pressed }) => [
-          styles.button,
-          (!emailAddress || !password) && styles.buttonDisabled,
-          pressed && styles.buttonPressed,
-        ]}
-        onPress={onSignInPress}
-        disabled={!emailAddress || !password}
+    <SafeAreaView style={styles.mainBackground}>
+      <KeyboardAvoidingView
+        style={{ flex: 1 }}
+        behavior={Platform.OS === "ios" ? "padding" : "height"}
       >
-        <Text style={styles.buttonText}>Sign in</Text>
-      </Pressable>
-      <View style={styles.linkContainer}>
-        <Text>Don't have an account? </Text>
-        <Link href="/sign-up">
-          <Text>Sign Up</Text>
-        </Link>
-      </View>
-    </View>
+        <ScrollView
+          contentContainerStyle={styles.scrollContainer}
+          keyboardShouldPersistTaps="handled"
+        >
+          <Text style={styles.brandTitle}>Packed</Text>
+
+          <View style={styles.card}>
+            <Text style={styles.cardTitle}>Welcome Back</Text>
+
+            <Text style={styles.label}>Email or Username</Text>
+            <TextInput
+              style={styles.input}
+              autoCapitalize="none"
+              value={identifier}
+              placeholder="Enter email or username"
+              placeholderTextColor="#A0A0A0"
+              onChangeText={(text) => setIdentifier(text)}
+            />
+
+            <Text style={styles.label}>Password</Text>
+            <TextInput
+              style={styles.input}
+              value={password}
+              placeholder="Enter password"
+              placeholderTextColor="#A0A0A0"
+              secureTextEntry={true}
+              onChangeText={(password) => setPassword(password)}
+            />
+
+            <Pressable
+              style={({ pressed }) => [
+                styles.button,
+                (!identifier || !password) && styles.buttonDisabled,
+                pressed && styles.buttonPressed,
+              ]}
+              onPress={onSignInPress}
+              disabled={!identifier || !password}
+            >
+              <Text style={styles.buttonText}>Sign In</Text>
+            </Pressable>
+
+            <View style={styles.linkContainer}>
+              <Text style={styles.linkText}>Don't have an account? </Text>
+              <Link href="/sign-up">
+                <Text style={styles.linkAction}>Sign Up</Text>
+              </Link>
+            </View>
+          </View>
+        </ScrollView>
+      </KeyboardAvoidingView>
+    </SafeAreaView>
   );
 }
 
 const styles = StyleSheet.create({
-  container: {
+  mainBackground: {
     flex: 1,
+    backgroundColor: "#6320c7", // Brand Purple
+  },
+  scrollContainer: {
+    flexGrow: 1,
+    justifyContent: "center",
     padding: 20,
-    gap: 12,
+  },
+  brandTitle: {
+    fontSize: 48,
+    fontWeight: "900",
+    color: "#FFFFFF",
+    textAlign: "center",
+    marginBottom: 30,
+    letterSpacing: 1.5,
+  },
+  card: {
+    backgroundColor: "#FFFFFF",
+    borderRadius: 20,
+    padding: 24,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.15,
+    shadowRadius: 12,
+    elevation: 5,
+  },
+  cardTitle: {
+    fontSize: 24,
+    fontWeight: "bold",
+    color: "#333",
+    marginBottom: 20,
+    textAlign: "center",
   },
   title: {
+    fontSize: 20,
+    fontWeight: "bold",
     marginBottom: 8,
+    color: "#333",
   },
   description: {
     fontSize: 14,
-    marginBottom: 16,
-    opacity: 0.8,
+    marginBottom: 20,
+    color: "#666",
+    lineHeight: 20,
   },
   label: {
     fontWeight: "600",
     fontSize: 14,
+    color: "#444",
+    marginBottom: 6,
   },
   input: {
     borderWidth: 1,
-    borderColor: "#ccc",
-    borderRadius: 8,
-    padding: 12,
+    borderColor: "#E0E0E0",
+    borderRadius: 12,
+    padding: 14,
     fontSize: 16,
-    backgroundColor: "#fff",
+    backgroundColor: "#F9F9F9",
+    marginBottom: 16,
+    color: "#333",
   },
   button: {
-    backgroundColor: "#0a7ea4",
-    paddingVertical: 12,
-    paddingHorizontal: 24,
-    borderRadius: 8,
+    backgroundColor: "#6320c7",
+    paddingVertical: 16,
+    borderRadius: 12,
     alignItems: "center",
-    marginTop: 8,
+    marginTop: 10,
+    shadowColor: "#6320c7",
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.3,
+    shadowRadius: 6,
+    elevation: 4,
   },
   buttonPressed: {
-    opacity: 0.7,
+    opacity: 0.8,
+    transform: [{ scale: 0.98 }],
   },
   buttonDisabled: {
-    opacity: 0.5,
+    backgroundColor: "#A78BCE",
+    shadowOpacity: 0,
+    elevation: 0,
   },
   buttonText: {
     color: "#fff",
-    fontWeight: "600",
+    fontWeight: "bold",
+    fontSize: 16,
   },
   linkContainer: {
     flexDirection: "row",
-    gap: 4,
-    marginTop: 12,
+    justifyContent: "center",
+    marginTop: 20,
     alignItems: "center",
+  },
+  linkText: {
+    color: "#666",
+    fontSize: 14,
+  },
+  linkAction: {
+    color: "#6320c7",
+    fontWeight: "bold",
+    fontSize: 14,
   },
 });
