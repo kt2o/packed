@@ -20,12 +20,10 @@ export const LocationDropDown = ({ label, data, value, onChange, placeholder }: 
         selectedTextStyle={styles.selectedTextStyle}
         inputSearchStyle={styles.inputSearchStyle}
         data={data}
-        search
         maxHeight={300}
         labelField="label"
         valueField="value"
         placeholder={placeholder || "Select item"}
-        searchPlaceholder="Search..."
         value={value}
         onChange={item => onChange(item.value)}
       />

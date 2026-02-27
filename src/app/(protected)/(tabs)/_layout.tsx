@@ -21,6 +21,7 @@ export default function TabLayout() {
         name="submit"
         options={{
           title: "Submit",
+          href: null,
           headerTitle: "Submit Location Status",
           headerTintColor: "#6320c7",
           tabBarIcon: ({ color }) => (

@@ -20,16 +20,29 @@ export default function SubmitScreen() {
   const router = useRouter();
 
   const { location } = useLocalSearchParams();
-  const [selectedSpot, setSelectedSpot] = useState<string>(location as string ?? "");
+  const [selectedSpot, setSelectedSpot] = useState<string>(
+    (location as string) ?? "",
+  );
+  const [selectedFloor, setSelectedFloor] = useState<string>("");
+
   const [selectedStatus, setSelectedStatus] = useState<Status>("empty");
   const [submitting, setSubmitting] = useState(false);
 
-  const locations = useMemo(() => {
-    return spots.map((spot) => ({
-      label: spot.displayName,
-      value: String(spot.id),
-    }));
-  }, [spots]);
+  // const locations = useMemo(() => {
+  //   return spots.map((spot) => ({
+  //     label: spot.displayName,
+  //     value: String(spot.id),
+  //   }));
+  // }, [spots]);
+
+  const selectedSpotData = useMemo(
+    () => spots.find((s) => s.id === selectedSpot),
+    [selectedSpot],
+  );
+  const floors = useMemo(
+  () => spots.find((s) => s.id === selectedSpot)?.floors ?? [],
+  [selectedSpot]
+);
 
   const handleSubmit = async () => {
     if (!selectedSpot) {
@@ -44,6 +57,7 @@ export default function SubmitScreen() {
         spot_id: selectedSpot,
         status: selectedStatus,
         user_id: "dev-user-123",
+        floor_id: selectedFloor
       },
     ]);
 
@@ -73,21 +87,50 @@ export default function SubmitScreen() {
         onChange={setSelectedSpot}
         placeholder="Where are you?"
       ></LocationDropDown> */}
+      {floors.length > 0 && (
+        <View style={styles.inputContainer}>
+          <Text style={styles.label}>Which floor are you on?</Text>
+          <RadioButton.Group
+            onValueChange={(value) => setSelectedFloor(value)}
+            value={selectedFloor}
+          >
+            {floors.map((floor) => (
+              <TouchableOpacity
+                key={floor.id}
+                style={styles.radioOption}
+                onPress={() => setSelectedFloor(floor.id)}
+              >
+                <RadioButton value={floor.id} />
+                <Text style={styles.radioLabel}>{floor.displayName}</Text>
+              </TouchableOpacity>
+            ))}
+          </RadioButton.Group>
+        </View>
+      )}
       <View style={styles.inputContainer}>
         <Text style={styles.label}>How busy is this location?</Text>
         <RadioButton.Group
           onValueChange={(value) => setSelectedStatus(value as Status)}
           value={selectedStatus}
         >
-          <TouchableOpacity style={styles.radioOption} onPress={() => setSelectedStatus("empty")}>
+          <TouchableOpacity
+            style={styles.radioOption}
+            onPress={() => setSelectedStatus("empty")}
+          >
             <RadioButton value="empty" />
             <Text style={styles.radioLabel}>Empty</Text>
           </TouchableOpacity>
-          <TouchableOpacity style={styles.radioOption} onPress={() => setSelectedStatus("normal")}>
+          <TouchableOpacity
+            style={styles.radioOption}
+            onPress={() => setSelectedStatus("normal")}
+          >
             <RadioButton value="normal" />
             <Text style={styles.radioLabel}>Normal</Text>
           </TouchableOpacity>
-          <TouchableOpacity style={styles.radioOption} onPress={() => setSelectedStatus("packed")}>
+          <TouchableOpacity
+            style={styles.radioOption}
+            onPress={() => setSelectedStatus("packed")}
+          >
             <RadioButton value="packed" />
             <Text style={styles.radioLabel}>Packed</Text>
           </TouchableOpacity>
