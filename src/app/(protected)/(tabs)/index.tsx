@@ -1,11 +1,12 @@
 import { useEffect, useState, useCallback } from "react";
 import { useFocusEffect, useRouter } from "expo-router";
-import { StyleSheet, ScrollView, RefreshControl } from "react-native";
+import { StyleSheet, ScrollView, RefreshControl, View } from "react-native";
 import React from "react";
 
 import { useSupabase } from "../../../lib/supabase-client";
 import LocationCard from "../../../components/LocationCard";
 import { spots } from "../../../config/studySpots";
+import FloorAccordion from "src/components/FloorAccordion";
 
 function getStatus(count: number, capacity: number) {
   const ratio = count / capacity;
@@ -48,13 +49,53 @@ export default function HomeScreen() {
     setSpotsWithStatus(merged);
   }
 
+  const [statusByFloorId, setStatusByFloorId] = useState<
+    Record<string, string>
+  >(() =>
+    Object.fromEntries(
+      spots.flatMap((s) =>
+        (s.floors ?? []).map((f) => [f.id, "unknown" as string]),
+      ),
+    ),
+  );
+  async function fetchFloorStatus() {
+    const { data, error } = await supabase
+      .from("study_spot_status")
+      .select("spot_id,floor_id,status,created_at")
+      .not("floor_id", "is", null)
+      .order("created_at", { ascending: false })
+      .limit(200);
+
+    if (error) {
+      console.error("Error fetching floor statuses:", error);
+      return;
+    }
+
+    const latestFloor: Record<string, string> = {};
+
+    for (const row of data ?? []) {
+      const floorId = row.floor_id as string;
+      const status = row.status as string;
+
+      if (!latestFloor[floorId]) {
+        latestFloor[floorId] =
+          status === "empty" || status === "packed"
+            ? status
+            : "unknown";
+      }
+    }
+
+    setStatusByFloorId((prev) => ({ ...prev, ...latestFloor }));
+  };
+
   useEffect(() => {
     fetchStudySpotStatus();
+    fetchFloorStatus();
   }, []);
 
   const onRefresh = async () => {
     setRefreshing(true);
-    await fetchStudySpotStatus();
+    await Promise.all([fetchStudySpotStatus(), fetchFloorStatus()]);
     setRefreshing(false);
   };
 
@@ -70,6 +111,7 @@ return (
         const percentage = Math.round((spot.count / spot.capacity) * 100);
 
         return (
+          <View key={spot.id}>
           <LocationCard
             key={spot.id}
             id={spot.id}
@@ -86,6 +128,10 @@ return (
               })
             }
           />
+          {spot.floors && spot.floors.length > 0 && (
+            <FloorAccordion floors={spot.floors} statusByFloorId={statusByFloorId} />
+          )}
+          </View>
         );
       })}
     </ScrollView>

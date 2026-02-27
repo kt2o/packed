@@ -1,7 +1,7 @@
 import { useMemo, useState } from "react";
 import { supabase } from "../../../lib/supabase-client";
 import type { Status } from "../../../types/status";
-import { useRouter } from "expo-router";
+import { useLocalSearchParams, useRouter } from "expo-router";
 import { spots } from "src/config/studySpots";
 import { useUser } from "@clerk/clerk-expo";
 
@@ -21,7 +21,10 @@ export default function SubmitScreen() {
   const router = useRouter();
   const { user } = useUser();
 
+  const { location } = useLocalSearchParams();
+
   const [selectedSpot, setSelectedSpot] = useState<string>("");
+  const [selectedFloor, setSelectedFloor] = useState<string>("");
   const [selectedStatus, setSelectedStatus] = useState<Status>("empty");
   const [submitting, setSubmitting] = useState(false);
 
@@ -32,8 +35,13 @@ export default function SubmitScreen() {
     }));
   }, [spots]);
 
+  const floors = useMemo(
+  () => spots.find((s) => s.id === location)?.floors ?? [],
+  [location]
+);
+
   const handleSubmit = async () => {
-    if (!selectedSpot) {
+    if (!location) {
       Alert.alert("Error", "No location was provided.");
       return;
     }
@@ -50,9 +58,10 @@ export default function SubmitScreen() {
 
     const { error } = await supabase.from("study_spot_status").insert([
       {
-        spot_id: selectedSpot,
+        spot_id: location,
         status: selectedStatus,
         user_id: userId,
+        floor_id: selectedFloor
       },
     ]);
 
@@ -64,7 +73,7 @@ export default function SubmitScreen() {
       return;
     }
 
-    Alert.alert("Success", `Reported ${selectedSpot} as ${selectedStatus}`, [
+    Alert.alert("Success", `Reported ${location} as ${selectedStatus}`, [
       { text: "OK", onPress: () => router.back() },
     ]);
   };
@@ -75,31 +84,51 @@ export default function SubmitScreen() {
       contentContainerStyle={styles.scrollView}
     >
       <Text style={styles.title}>Study Location Status</Text>
-      <LocationDropDown
+      {/* <LocationDropDown
         label={"Location"}
         data={locations}
         value={selectedSpot}
         onChange={setSelectedSpot}
         placeholder="Where are you?"
-      ></LocationDropDown>
+      ></LocationDropDown> */}
+      {floors.length > 0 && (
+        <View style={styles.inputContainer}>
+          <Text style={styles.label}>Which floor are you on?</Text>
+          <RadioButton.Group
+            onValueChange={(value) => setSelectedFloor(value)}
+            value={selectedFloor}
+          >
+            {floors.map((floor) => (
+              <TouchableOpacity
+                key={floor.id}
+                style={styles.radioOption}
+                onPress={() => setSelectedFloor(floor.id)}
+              >
+                <RadioButton value={floor.id} />
+                <Text style={styles.radioLabel}>{floor.displayName}</Text>
+              </TouchableOpacity>
+            ))}
+          </RadioButton.Group>
+        </View>
+      )}
       <View style={styles.inputContainer}>
         <Text style={styles.label}>How busy is this location?</Text>
         <RadioButton.Group
           onValueChange={(value) => setSelectedStatus(value as Status)}
           value={selectedStatus}
         >
-          <View style={styles.radioOption}>
+          <TouchableOpacity style={styles.radioOption} onPress={() => setSelectedStatus("empty")}>
             <RadioButton value="empty" />
             <Text style={styles.radioLabel}>Empty</Text>
-          </View>
-          <View style={styles.radioOption}>
+          </TouchableOpacity>
+          {/* <View style={styles.radioOption}>
             <RadioButton value="normal" />
             <Text style={styles.radioLabel}>Normal</Text>
-          </View>
-          <View style={styles.radioOption}>
+          </View> */}
+          <TouchableOpacity style={styles.radioOption} onPress={() => setSelectedStatus("packed")}>
             <RadioButton value="packed" />
             <Text style={styles.radioLabel}>Packed</Text>
-          </View>
+          </TouchableOpacity>
         </RadioButton.Group>
       </View>
 
