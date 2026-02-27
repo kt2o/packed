@@ -3,6 +3,7 @@ import { supabase } from "../../../lib/supabase-client";
 import type { Status } from "../../../types/status";
 import { useRouter } from "expo-router";
 import { spots } from "src/config/studySpots";
+import { useUser } from "@clerk/clerk-expo";
 
 import {
   View,
@@ -18,6 +19,7 @@ import LocationDropDown from "../../../components/LocationDropDown";
 
 export default function SubmitScreen() {
   const router = useRouter();
+  const { user } = useUser();
 
   const [selectedSpot, setSelectedSpot] = useState<string>("");
   const [selectedStatus, setSelectedStatus] = useState<Status>("empty");
@@ -38,11 +40,19 @@ export default function SubmitScreen() {
 
     setSubmitting(true);
 
+    const { data: row } = await supabase
+     .from("user_database")
+     .select("id")
+     .eq("user_email", user.primaryEmailAddress.emailAddress)
+     .single();
+
+     const userId = user.id;
+
     const { error } = await supabase.from("study_spot_status").insert([
       {
         spot_id: selectedSpot,
         status: selectedStatus,
-        user_id: "dev-user-123",
+        user_id: userId,
       },
     ]);
 
@@ -68,7 +78,7 @@ export default function SubmitScreen() {
       <LocationDropDown
         label={"Location"}
         data={locations}
-        value={"selectedSpot"}
+        value={selectedSpot}
         onChange={setSelectedSpot}
         placeholder="Where are you?"
       ></LocationDropDown>

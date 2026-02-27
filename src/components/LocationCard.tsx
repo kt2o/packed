@@ -16,9 +16,10 @@ const LocationCard = (props: {
     status: Status;
     count?: number;
     capacity?: number;
+    percentage: number;
     onPress: () => void;
 }) => {
-    const { id, displayName, image, status, count, capacity, onPress } = props;
+    const { id, displayName, image, status, count, capacity, percentage, onPress } = props;
 
     const statusColor: Record<Status, string> = {
         empty: "#4CAF50",
@@ -27,6 +28,13 @@ const LocationCard = (props: {
         full: "#F44336",
         unknown: "gray",
     };
+
+   const badgeColor = {
+   empty: "rgba(76, 175, 80, 0.8)", // green
+   moderate: "rgba(255, 193, 7, 0.8)", // yellow
+   busy: "rgba(255, 87, 34, 0.8)", // orange
+   full: "rgba(244, 67, 54, 0.8)", // red
+   }
 
 
   return (
@@ -51,10 +59,11 @@ const LocationCard = (props: {
           </View>
 
           {count !== undefined && capacity !== undefined && (
-            <Text style={styles.countText}>
-              {count} / {capacity} people
-            </Text>
+          <View style={[styles.capacityBadge, { backgroundColor: badgeColor[status] }]}>
+             <Text style={styles.capacityText}>{percentage}%</Text>
+             </View>
           )}
+
         </View>
       </ImageBackground>
     </TouchableOpacity>
@@ -120,6 +129,23 @@ const styles = StyleSheet.create({
     color: "white",
     fontSize: 12,
     fontWeight: "500",
+  },
+  capacityBadge: {
+    position: "absolute",
+    bottom: 12,
+    right: 12,
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    backgroundColor: "rgba(0,0,0,0.6)",
+    justifyContent: "center",
+    alignItems: "center",
+  },
+
+  capacityText: {
+    color: "white",
+    fontSize: 12,
+    fontWeight: "600",
   },
 
 });

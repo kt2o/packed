@@ -3,13 +3,15 @@ import { useEffect } from "react";
 
 import * as Location from "expo-location";
 
-import { Stack, Redirect } from "expo-router";
+import { Stack, useRouter } from "expo-router";
 import { useAuth } from "@clerk/clerk-expo";
 import React from "react";
 
 
 export default function ProtectedLayout() {
-  const router = useRouter();
+  const { isSignedIn, isLoaded } = useAuth();
+
+  if (!isLoaded) return null;
 
   if (!isSignedIn) {
     return <Redirect href="/sign-in" />;

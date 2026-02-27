@@ -10,7 +10,7 @@ import { spots } from "../../../config/studySpots";
 function getStatus(count: number, capacity: number) {
   const ratio = count / capacity;
   if (ratio >= 1) return "full";
-  if (ratio >= 0.7) return "busy";
+  if (ratio >= 0.7) return "packed";
   if (ratio >= 0.3) return "moderate";
   return "empty";
 }
@@ -36,6 +36,7 @@ export default function HomeScreen() {
       const count =
         counts?.find((c) => c.spot_id === spot.id)?.user_count ?? 0;
 
+
       return {
         ...spot,
         count,
@@ -57,32 +58,40 @@ export default function HomeScreen() {
     setRefreshing(false);
   };
 
-  return (
+
+return (
     <ScrollView
       contentContainerStyle={styles.container}
       refreshControl={
         <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
       }
     >
-      {spotsWithStatus.map((spot) => (
-        <LocationCard
-          key={spot.id}
-          id={spot.id}
-          displayName={spot.displayName}
-          image={spot.image}
-          status={spot.status}
-          count={spot.count}
-          capacity={spot.capacity}
-          onPress={() =>
-            router.push({
-              pathname: "/spot/[id]",
-              params: { id: spot.id },
-            })
-          }
-        />
-      ))}
+      {spotsWithStatus.map((spot) => {
+        const percentage = Math.round((spot.count / spot.capacity) * 100);
+
+        return (
+          <LocationCard
+            key={spot.id}
+            id={spot.id}
+            displayName={spot.displayName}
+            image={spot.image}
+            status={spot.status}
+            count={spot.count}
+            capacity={spot.capacity}
+            percentage={percentage}
+            onPress={() =>
+              router.push({
+                pathname: "/spot/[id]",
+                params: { id: spot.id },
+              })
+            }
+          />
+        );
+      })}
     </ScrollView>
-  );
+);
+
+
 }
 
 const styles = StyleSheet.create({
