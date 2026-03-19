@@ -16,6 +16,7 @@ export default function TodoScreen() {
     const [loading, setLoading] = useState(true);
     const [title, setTitle] = useState('');
     const [adding, setAdding] = useState(false);
+    const [filter, setFilter] = useState<'all' | 'active' | 'completed'>('all');
     const { user } = useUser();
 
     async function loadTodos() {
@@ -107,6 +108,12 @@ export default function TodoScreen() {
         loadTodos();
     }, []);
 
+    const filteredTodos = todos.filter((todo) => {
+        if (filter === 'active') return !todo.is_completed;
+        if (filter === 'completed') return todo.is_completed;
+        return true;
+    });
+
     return (
         <View style={styles.container}>
             <Text style={styles.header}>My To-Do List</Text>
@@ -129,11 +136,31 @@ export default function TodoScreen() {
                 </TouchableOpacity>
             </View>
 
+            <View style={styles.filterRow}>
+                <TouchableOpacity onPress={() => setFilter('all')}>
+                    <Text style={[styles.filterText, filter === 'all' && styles.activeFilter]}>
+                        All
+                    </Text>
+                </TouchableOpacity>
+
+                <TouchableOpacity onPress={() => setFilter('active')}>
+                    <Text style={[styles.filterText, filter === 'active' && styles.activeFilter]}>
+                        Active
+                    </Text>
+                </TouchableOpacity>
+
+                <TouchableOpacity onPress={() => setFilter('completed')}>
+                    <Text style={[styles.filterText, filter === 'completed' && styles.activeFilter]}>
+                        Completed
+                    </Text>
+                </TouchableOpacity>
+            </View>
+
             {loading ? (
                 <Text>Loading...</Text>
             ) : (
                 <FlatList
-                    data={todos}
+                    data={filteredTodos}
                     keyExtractor={(item) => item.id}
                     renderItem={({ item }) => (
                         <View style={styles.todoItem}>
@@ -221,5 +248,19 @@ const styles = StyleSheet.create({
         color: 'red',
         fontWeight: '600',
         marginLeft: 12,
+    },
+    filterRow: {
+        flexDirection: 'row',
+        justifyContent: 'space-between',
+        marginBottom: 16,
+        paddingHorizontal: 4,
+    },
+    filterText: {
+        fontSize: 16,
+        color: '#444',
+    },
+    activeFilter: {
+        color: '#6320c7',
+        fontWeight: '700',
     },
 });
