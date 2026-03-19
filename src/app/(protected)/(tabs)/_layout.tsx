@@ -47,7 +47,7 @@ export default function TabLayout() {
           headerTitle: "",
           headerTintColor: "#6320c7",
           tabBarIcon: ({ color }) => (
-            <FontAwesome5 name="clipboard-outline" size={24} color={color} />
+            <Ionicons name="clipboard-outline" size={24} color={color} />
           ),
         }}
       />

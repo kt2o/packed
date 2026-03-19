@@ -36,9 +36,9 @@ export default function SubmitScreen() {
   }, [spots]);
 
   const floors = useMemo(
-  () => spots.find((s) => s.id === location)?.floors ?? [],
-  [location]
-);
+    () => spots.find((s) => s.id === location)?.floors ?? [],
+    [location]
+  );
 
   const handleSubmit = async () => {
     if (!location) {
@@ -49,12 +49,12 @@ export default function SubmitScreen() {
     setSubmitting(true);
 
     const { data: row } = await supabase
-     .from("user_database")
-     .select("id")
-     .eq("user_email", user.primaryEmailAddress.emailAddress)
-     .single();
+      .from("user_database")
+      .select("id")
+      .eq("user_email", user.primaryEmailAddress.emailAddress)
+      .single();
 
-     const userId = user.id;
+    const userId = user.id;
 
     const { error } = await supabase.from("study_spot_status").insert([
       {
