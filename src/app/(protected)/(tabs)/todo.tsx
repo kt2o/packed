@@ -89,6 +89,20 @@ export default function TodoScreen() {
         }
     }
 
+    async function deleteTodo(id: string) {
+        const { error } = await supabase
+            .from('todo_list')
+            .delete()
+            .eq('id', id)
+
+        if (error) {
+            console.error('Error deleting todo:', error.message);
+            return;
+        }
+
+        setTodos((prev) => prev.filter((todo) => todo.id !== id));
+    }
+
     useEffect(() => {
         loadTodos();
     }, []);
@@ -122,16 +136,25 @@ export default function TodoScreen() {
                     data={todos}
                     keyExtractor={(item) => item.id}
                     renderItem={({ item }) => (
-                        <TouchableOpacity onPress={() => toggleTodo(item)}>
-                            <View style={styles.todoItem}>
-                                <Text style={[
-                                    styles.todoText,
-                                    item.is_completed && styles.completed
-                                ]}>
+                        <View style={styles.todoItem}>
+                            <TouchableOpacity
+                                onPress={() => toggleTodo(item)}
+                                style={styles.todoContent}
+                            >
+                                <Text
+                                    style={[
+                                        styles.todoText,
+                                        item.is_completed && styles.completed,
+                                    ]}
+                                >
                                     {item.is_completed ? '✅' : '⬜'} {item.title}
                                 </Text>
-                            </View>
-                        </TouchableOpacity>
+                            </TouchableOpacity>
+
+                            <TouchableOpacity onPress={() => deleteTodo(item.id)}>
+                                <Text style={styles.deleteText}>Delete</Text>
+                            </TouchableOpacity>
+                        </View>
                     )}
                     ListEmptyComponent={<Text>No To-Do's yet.</Text>}
                 />
@@ -177,6 +200,9 @@ const styles = StyleSheet.create({
         fontWeight: '600',
     },
     todoItem: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'space-between',
         paddingVertical: 12,
         borderBottomWidth: 1,
         borderBottomColor: '#eee',
@@ -187,5 +213,13 @@ const styles = StyleSheet.create({
     completed: {
         textDecorationLine: 'line-through',
         color: 'gray',
+    },
+    todoContent: {
+        flex: 1,
+    },
+    deleteText: {
+        color: 'red',
+        fontWeight: '600',
+        marginLeft: 12,
     },
 });
