@@ -17,6 +17,8 @@ export default function TodoScreen() {
     const [title, setTitle] = useState('');
     const [adding, setAdding] = useState(false);
     const [filter, setFilter] = useState<'all' | 'active' | 'completed'>('all');
+    const [editingId, setEditingId] = useState<string | null>(null);
+    const [editingTitle, setEditingTitle] = useState('');
     const { user } = useUser();
 
     async function loadTodos() {
@@ -104,6 +106,30 @@ export default function TodoScreen() {
         setTodos((prev) => prev.filter((todo) => todo.id !== id));
     }
 
+    async function updateTodo(id: string) {
+        const trimmedTitle = editingTitle.trim();
+        if (!trimmedTitle) return;
+
+        const { data, error } = await supabase
+            .from('todo_list')
+            .update({ title: trimmedTitle })
+            .eq('id', id)
+            .select()
+            .single();
+
+        if (error) {
+            console.error('Error updating todo:', error.message);
+            return;
+        }
+
+        if (data) {
+            setTodos((prev) => prev.map((todo) => (todo.id === id ? data : todo)));
+        }
+
+        setEditingId(null);
+        setEditingTitle('');
+    }
+
     useEffect(() => {
         loadTodos();
     }, []);
@@ -164,23 +190,57 @@ export default function TodoScreen() {
                     keyExtractor={(item) => item.id}
                     renderItem={({ item }) => (
                         <View style={styles.todoItem}>
-                            <TouchableOpacity
-                                onPress={() => toggleTodo(item)}
-                                style={styles.todoContent}
-                            >
-                                <Text
-                                    style={[
-                                        styles.todoText,
-                                        item.is_completed && styles.completed,
-                                    ]}
-                                >
-                                    {item.is_completed ? '✅' : '⬜'} {item.title}
-                                </Text>
-                            </TouchableOpacity>
+                            {editingId === item.id ? (
+                                <View style={styles.editRow}>
+                                    <TextInput
+                                        value={editingTitle}
+                                        onChangeText={setEditingTitle}
+                                        style={styles.editInput}
+                                    />
+                                    <TouchableOpacity onPress={() => updateTodo(item.id)}>
+                                        <Text style={styles.saveText}>Save</Text>
+                                    </TouchableOpacity>
+                                    <TouchableOpacity
+                                        onPress={() => {
+                                            setEditingId(null);
+                                            setEditingTitle('');
+                                        }}
+                                    >
+                                        <Text style={styles.cancelText}>Cancel</Text>
+                                    </TouchableOpacity>
+                                </View>
+                            ) : (
+                                <>
+                                    <TouchableOpacity
+                                        onPress={() => toggleTodo(item)}
+                                        style={styles.todoContent}
+                                    >
+                                        <Text
+                                            style={[
+                                                styles.todoText,
+                                                item.is_completed && styles.completed,
+                                            ]}
+                                        >
+                                            {item.is_completed ? '✅' : '⬜'} {item.title}
+                                        </Text>
+                                    </TouchableOpacity>
 
-                            <TouchableOpacity onPress={() => deleteTodo(item.id)}>
-                                <Text style={styles.deleteText}>Delete</Text>
-                            </TouchableOpacity>
+                                    <View style={styles.actionsRow}>
+                                        <TouchableOpacity
+                                            onPress={() => {
+                                                setEditingId(item.id);
+                                                setEditingTitle(item.title);
+                                            }}
+                                        >
+                                            <Text style={styles.editText}>Edit</Text>
+                                        </TouchableOpacity>
+
+                                        <TouchableOpacity onPress={() => deleteTodo(item.id)}>
+                                            <Text style={styles.deleteText}>Delete</Text>
+                                        </TouchableOpacity>
+                                    </View>
+                                </>
+                            )}
                         </View>
                     )}
                     ListEmptyComponent={<Text>No To-Do's yet.</Text>}
@@ -262,5 +322,38 @@ const styles = StyleSheet.create({
     activeFilter: {
         color: '#6320c7',
         fontWeight: '700',
+    },
+    actionsRow: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: 12,
+    },
+    editText: {
+        color: '#6320c7',
+        fontWeight: '600',
+        marginRight: 8,
+    },
+    editRow: {
+        flex: 1,
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: 8,
+    },
+    editInput: {
+        flex: 1,
+        borderWidth: 1,
+        borderColor: '#ccc',
+        borderRadius: 8,
+        paddingHorizontal: 10,
+        height: 40,
+        backgroundColor: '#fff',
+    },
+    saveText: {
+        color: '#6320c7',
+        fontWeight: '700',
+    },
+    cancelText: {
+        color: 'gray',
+        fontWeight: '600',
     },
 });
