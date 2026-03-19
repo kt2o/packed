@@ -21,8 +21,8 @@ export default function TabLayout() {
         name="submit"
         options={{
           title: "Submit",
+          headerTitle: "",
           href: null,
-          headerTitle: "Submit Location Status",
           headerTintColor: "#6320c7",
           tabBarIcon: ({ color }) => (
             <Entypo name="location" size={24} color={color} />
@@ -37,6 +37,17 @@ export default function TabLayout() {
           headerTintColor: "#6320c7",
           tabBarIcon: ({ color }) => (
             <Ionicons name="person" size={24} color={color} />
+          ),
+        }}
+      />
+      <Tabs.Screen
+        name="todo"
+        options={{
+          title: "To-Do",
+          headerTitle: "",
+          headerTintColor: "#6320c7",
+          tabBarIcon: ({ color }) => (
+            <Ionicons name="clipboard-outline" size={24} color={color} />
           ),
         }}
       />

@@ -4,17 +4,16 @@ import { spots } from "../config/studySpots";
 import { TouchableOpacity, View, StyleSheet } from "react-native";
 import { useState } from "react";
 import { MaterialIcons } from "@expo/vector-icons";
-import { Status } from "src/types/status";
 import { useSupabase } from "src/lib/supabase-client";
 
 type Floor = NonNullable<(typeof spots)[number]["floors"]>[number];
 
 type Props = {
   floors: Floor[];
-  statusByFloorId: Record<string, Status>;
+  statusByFloorId: Record<string, string>;
 };
 
-const statusColor: Record<Status, string> = {
+const statusColor: Record<string, string> = {
         empty: "green",
         normal: "yellow",
         packed: "red",

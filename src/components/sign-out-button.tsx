@@ -31,18 +31,14 @@ export const SignOutButton = () => {
 
 const styles = StyleSheet.create({
   button: {
-    backgroundColor: "#0a7ea4",
-    paddingVertical: 12,
-    paddingHorizontal: 24,
-    borderRadius: 8,
+    paddingVertical: 15,
+    marginTop: 30,
     alignItems: "center",
-    marginTop: 8,
   },
-  buttonPressed: {
-    opacity: 0.7,
-  },
+  buttonPressed: { opacity: 0.5 },
   buttonText: {
-    color: "#fff",
-    fontWeight: "600",
+    color: "#888", // Faded color
+    fontSize: 14,
+    textDecorationLine: "underline",
   },
 });

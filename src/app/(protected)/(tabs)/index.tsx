@@ -1,72 +1,64 @@
-import { useFocusEffect } from "expo-router";
-import { useCallback } from "react";
-
-import { useState } from "react";
-import { useSupabase } from "../../../lib/supabase-client";
-
-import { useRouter } from "expo-router";
+import { useEffect, useState, useCallback } from "react";
+import { useFocusEffect, useRouter } from "expo-router";
 import { StyleSheet, ScrollView, RefreshControl, View } from "react-native";
+import React from "react";
 
+import { useSupabase } from "../../../lib/supabase-client";
 import LocationCard from "../../../components/LocationCard";
 import { spots } from "../../../config/studySpots";
-import type { Status } from "../../../types/status";
-import React from "react";
 import FloorAccordion from "src/components/FloorAccordion";
+
+function getStatus(count: number, capacity: number) {
+  const ratio = count / capacity;
+  if (ratio >= 1) return "full";
+  if (ratio >= 0.7) return "packed";
+  if (ratio >= 0.3) return "moderate";
+  return "empty";
+}
 
 export default function HomeScreen() {
   const router = useRouter();
   const supabase = useSupabase();
-  const initialStatus: Record<string, Status> = Object.fromEntries(
-    spots.map((s) => [s.id, "unknown" as Status]),
-  );
 
-  const [statusBySpotId, setStatusBySpotId] = useState<Record<string, Status>>(
-    () => Object.fromEntries(spots.map((s) => [s.id, "unknown" as Status])),
-  );
-
+  const [spotsWithStatus, setSpotsWithStatus] = useState([]);
   const [refreshing, setRefreshing] = useState(false);
 
-  const fetchStatuses = async () => {
-    const { data, error } = await supabase
-      .from("study_spot_status")
-      .select("spot_id,status,created_at")
-      .order("created_at", { ascending: false })
-      .limit(200);
+  async function fetchStudySpotStatus() {
+    const { data: counts, error } = await supabase
+      .from("spot_counts")
+      .select("*");
 
     if (error) {
-      console.error("Error fetching statuses:", error);
+      console.error(error);
       return;
     }
 
-    const latest: Record<string, Status> = {};
+    const merged = spots.map((spot) => {
+      const count =
+        counts?.find((c) => c.spot_id === spot.id)?.user_count ?? 0;
 
-    for (const row of data ?? []) {
-      const spotId = row.spot_id as string;
-      const status = row.status as Status;
 
-      if (!latest[spotId]) {
-        if (status === "empty" || status === "normal" || status === "packed") {
-          latest[spotId] = status;
-        } else {
-          latest[spotId] = "unknown";
-        }
-      }
-    }
+      return {
+        ...spot,
+        count,
+        capacity: spot.capacity,
+        status: getStatus(count, spot.capacity),
+      };
+    });
 
-    setStatusBySpotId((prev) => ({ ...prev, ...latest }));
-  };
+    setSpotsWithStatus(merged);
+  }
 
   const [statusByFloorId, setStatusByFloorId] = useState<
-    Record<string, Status>
+    Record<string, string>
   >(() =>
     Object.fromEntries(
       spots.flatMap((s) =>
-        (s.floors ?? []).map((f) => [f.id, "unknown" as Status]),
+        (s.floors ?? []).map((f) => [f.id, "unknown" as string]),
       ),
     ),
   );
-
-  const fetchFloorStatuses = async () => {
+  async function fetchFloorStatus() {
     const { data, error } = await supabase
       .from("study_spot_status")
       .select("spot_id,floor_id,status,created_at")
@@ -79,15 +71,15 @@ export default function HomeScreen() {
       return;
     }
 
-    const latestFloor: Record<string, Status> = {};
+    const latestFloor: Record<string, string> = {};
 
     for (const row of data ?? []) {
       const floorId = row.floor_id as string;
-      const status = row.status as Status;
+      const status = row.status as string;
 
       if (!latestFloor[floorId]) {
         latestFloor[floorId] =
-          status === "empty" || status === "normal" || status === "packed"
+          status === "empty" || status === "packed"
             ? status
             : "unknown";
       }
@@ -96,34 +88,39 @@ export default function HomeScreen() {
     setStatusByFloorId((prev) => ({ ...prev, ...latestFloor }));
   };
 
+  useEffect(() => {
+    fetchStudySpotStatus();
+    fetchFloorStatus();
+  }, []);
+
   const onRefresh = async () => {
     setRefreshing(true);
-    await Promise.all([fetchStatuses(), fetchFloorStatuses()]);
+    await Promise.all([fetchStudySpotStatus(), fetchFloorStatus()]);
     setRefreshing(false);
   };
 
-  useFocusEffect(
-    useCallback(() => {
-      fetchStatuses();
-      fetchFloorStatuses();
-    }, []),
-  );
 
-  return (
+return (
     <ScrollView
       contentContainerStyle={styles.container}
       refreshControl={
         <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
       }
     >
-      {spots.map((spot) => (
-        <View key={spot.id}>
+      {spotsWithStatus.map((spot) => {
+        const percentage = Math.round((spot.count / spot.capacity) * 100);
+
+        return (
+          <View key={spot.id}>
           <LocationCard
             key={spot.id}
             id={spot.id}
             displayName={spot.displayName}
             image={spot.image}
-            status={statusBySpotId[spot.id] ?? "unknown"}
+            status={spot.status}
+            count={spot.count}
+            capacity={spot.capacity}
+            percentage={percentage}
             onPress={() =>
               router.push({
                 pathname: "/spot/[id]",
@@ -134,10 +131,13 @@ export default function HomeScreen() {
           {spot.floors && spot.floors.length > 0 && (
             <FloorAccordion floors={spot.floors} statusByFloorId={statusByFloorId} />
           )}
-        </View>
-      ))}
+          </View>
+        );
+      })}
     </ScrollView>
-  );
+);
+
+
 }
 
 const styles = StyleSheet.create({

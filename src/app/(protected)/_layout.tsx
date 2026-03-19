@@ -1,20 +1,21 @@
+
 import { useEffect } from "react";
-import { Stack, useRouter } from "expo-router";
+
 import * as Location from "expo-location";
 
-export default function ProtectedLayout() {
-  const router = useRouter();
+import { Stack, useRouter } from "expo-router";
+import { useAuth } from "@clerk/clerk-expo";
+import React from "react";
 
-  useEffect(() => {
-    async function checkPermission() {
-      const { status } = await Location.getForegroundPermissionsAsync();
-      if (status !== "granted") {
-        // Only redirect if they haven't dealt with permissions yet
-        router.replace("/location-permission");
-      }
-    }
-    checkPermission();
-  }, []);
+
+export default function ProtectedLayout() {
+  const { isSignedIn, isLoaded } = useAuth();
+
+  if (!isLoaded) return null;
+
+  if (!isSignedIn) {
+    return <Redirect href="/sign-in" />;
+  }
 
   return (
     <Stack>
