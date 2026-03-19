@@ -41,7 +41,7 @@ export default function TodoScreen() {
         if (!trimmedTitle) return;
 
         if (!user) {
-            console.error('No Clerk user found');
+            console.error('No user found');
             return;
         }
 
@@ -67,6 +67,26 @@ export default function TodoScreen() {
         }
 
         setAdding(false);
+    }
+
+    async function toggleTodo(item: Todo) {
+        const { data, error } = await supabase
+            .from('todo_list')
+            .update({ is_completed: !item.is_completed })
+            .eq('id', item.id)
+            .select()
+            .single();
+
+        if (error) {
+            console.error('Error updating todo:', error.message);
+            return;
+        }
+
+        if (data) {
+            setTodos((prev) =>
+                prev.map((todo) => (todo.id === item.id ? data : todo))
+            );
+        }
     }
 
     useEffect(() => {
@@ -102,9 +122,16 @@ export default function TodoScreen() {
                     data={todos}
                     keyExtractor={(item) => item.id}
                     renderItem={({ item }) => (
-                        <Text style={styles.todoText}>
-                            {item.is_completed ? '✅' : '⬜'} {item.title}
-                        </Text>
+                        <TouchableOpacity onPress={() => toggleTodo(item)}>
+                            <View style={styles.todoItem}>
+                                <Text style={[
+                                    styles.todoText,
+                                    item.is_completed && styles.completed
+                                ]}>
+                                    {item.is_completed ? '✅' : '⬜'} {item.title}
+                                </Text>
+                            </View>
+                        </TouchableOpacity>
                     )}
                     ListEmptyComponent={<Text>No To-Do's yet.</Text>}
                 />
@@ -156,5 +183,9 @@ const styles = StyleSheet.create({
     },
     todoText: {
         fontSize: 16,
+    },
+    completed: {
+        textDecorationLine: 'line-through',
+        color: 'gray',
     },
 });
