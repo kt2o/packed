@@ -1,6 +1,7 @@
 import { supabase } from "../../../lib/supabase-client";
+import { useUser } from '@clerk/clerk-expo';
 import React, { useEffect, useState } from 'react';
-import { View, Text, FlatList, StyleSheet } from 'react-native';
+import { View, Text, FlatList, StyleSheet, TextInput, TouchableOpacity } from 'react-native';
 
 type Todo = {
     id: string,
@@ -13,6 +14,9 @@ type Todo = {
 export default function TodoScreen() {
     const [todos, setTodos] = useState<Todo[]>([]);
     const [loading, setLoading] = useState(true);
+    const [title, setTitle] = useState('');
+    const [adding, setAdding] = useState(false);
+    const { user } = useUser();
 
     async function loadTodos() {
         setLoading(true);
@@ -23,12 +27,46 @@ export default function TodoScreen() {
             .order('created_at', { ascending: false });
 
         if (error) {
-            console.error(error.message);
+            console.error('Error loading to-dos: ', error.message);
         } else {
             setTodos(data || []);
         }
 
         setLoading(false);
+    }
+
+    async function handleAddTodo() {
+        const trimmedTitle = title.trim();
+
+        if (!trimmedTitle) return;
+
+        if (!user) {
+            console.error('No Clerk user found');
+            return;
+        }
+
+        setAdding(true);
+
+        const { data, error } = await supabase
+            .from('todo_list')
+            .insert([
+                {
+                    title: trimmedTitle,
+                    user_id: user.id,
+                    is_completed: false,
+                },
+            ])
+            .select()
+            .single();
+
+        if (error) {
+            console.error('Error adding to-do', error.message);
+        } else if (data) {
+            setTodos((prev) => [data, ...prev]);
+            setTitle('');
+        }
+
+        setAdding(false);
     }
 
     useEffect(() => {
@@ -38,6 +76,24 @@ export default function TodoScreen() {
     return (
         <View style={styles.container}>
             <Text style={styles.header}>My To-Do List</Text>
+
+            <View style={styles.inputRow}>
+                <TextInput
+                    value={title}
+                    onChangeText={setTitle}
+                    placeholder="Enter a task"
+                    style={styles.input}
+                />
+                <TouchableOpacity
+                    style={styles.addButton}
+                    onPress={handleAddTodo}
+                    disabled={adding}
+                >
+                    <Text style={styles.addButtonText}>
+                        {adding ? 'Adding...' : 'Add'}
+                    </Text>
+                </TouchableOpacity>
+            </View>
 
             {loading ? (
                 <Text>Loading...</Text>
@@ -68,8 +124,37 @@ const styles = StyleSheet.create({
         fontWeight: 'bold',
         marginBottom: 20,
     },
+    inputRow: {
+        flexDirection: 'row',
+        marginBottom: 20,
+        gap: 10,
+    },
+    input: {
+        flex: 1,
+        borderWidth: 1,
+        borderColor: '#ccc',
+        borderRadius: 8,
+        paddingHorizontal: 12,
+        height: 44,
+        backgroundColor: '#fff',
+    },
+    addButton: {
+        backgroundColor: '#6320c7',
+        paddingHorizontal: 16,
+        borderRadius: 8,
+        justifyContent: 'center',
+        alignItems: 'center',
+    },
+    addButtonText: {
+        color: '#fff',
+        fontWeight: '600',
+    },
+    todoItem: {
+        paddingVertical: 12,
+        borderBottomWidth: 1,
+        borderBottomColor: '#eee',
+    },
     todoText: {
         fontSize: 16,
-        marginBottom: 12,
     },
 });
