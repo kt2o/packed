@@ -40,6 +40,17 @@ export default function TabLayout() {
           ),
         }}
       />
+      <Tabs.Screen
+        name="todo"
+        options={{
+          title: "To-Do",
+          headerTitle: "",
+          headerTintColor: "#6320c7",
+          tabBarIcon: ({ color }) => (
+            <FontAwesome5 name="clipboard-outline" size={24} color={color} />
+          ),
+        }}
+      />
     </Tabs>
   );
 }
