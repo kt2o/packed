@@ -11,7 +11,7 @@ type Todo = {
     title: string,
     is_completed: boolean,
     created_at: string;
-    deadline_at: string;
+    deadline_at: string | null;
 };
 
 Notifications.setNotificationHandler({
@@ -133,27 +133,19 @@ export default function TodoScreen() {
     const { user } = useUser();
 
     async function loadTodos() {
+        if (!user) return;
+
         setLoading(true);
 
         const { data, error } = await supabase
             .from('todo_list')
-            .select('*');
+            .select('*')
+            .eq('user_id', user.id);
 
         if (error) {
             console.error('Error loading todos:', error.message);
         } else {
-            const sortedTodos = (data || []).sort((a, b) => {
-                if (a.deadline_at && b.deadline_at) {
-                    return new Date(a.deadline_at).getTime() - new Date(b.deadline_at).getTime();
-                }
-
-                if (a.deadline_at && !b.deadline_at) return -1;
-                if (!a.deadline_at && b.deadline_at) return 1;
-
-                return new Date(b.created_at).getTime() - new Date(a.created_at).getTime();
-            });
-
-            setTodos(sortedTodos);
+            setTodos(sortTodosByDeadline(data || []));
         }
         setLoading(false);
     }
@@ -284,8 +276,10 @@ export default function TodoScreen() {
     }
 
     useEffect(() => {
-        loadTodos();
-    }, []);
+        if (user) {
+            loadTodos();
+        }
+    }, [user]);
 
     const filteredTodos = todos.filter((todo) => {
         if (filter === 'active') return !todo.is_completed;
@@ -480,7 +474,7 @@ const styles = StyleSheet.create({
     },
     addButton: {
         backgroundColor: '#6320c7',
-        paddingHorizontal: 16,
+        padding: 8,
         borderRadius: 8,
         justifyContent: 'center',
         alignItems: 'center',
