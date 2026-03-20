@@ -10,7 +10,7 @@ import { useRouter } from "expo-router";
 export default function SpotScreen() {
   console.log("Spot Details screen mounted");
   const router = useRouter();
-  const { id } = useLocalSearchParams();
+  const { id } = useLocalSearchParams<{ id: string }>();
   const supabase = useSupabase();
   const DEV_MODE = true;
 
@@ -52,6 +52,7 @@ export default function SpotScreen() {
 
     if (isNaN(distance) || distance > spot.radius) {
       alert("You are not close enough to this study spot.");
+      router.replace({ pathname: "/submit", params: { verified: "false" } });
       return;
     }
 
@@ -85,14 +86,11 @@ export default function SpotScreen() {
   if (error) {
   console.log("Insert error:", error);
   alert("Could not check in.");
+  router.replace({ pathname: "/submit", params: { verified: "false" } });
   return;
   }
-
-    alert("Checked in successfully!");
-    router.replace({
-      pathname: "/submit",
-      params: { location: spot.id },
-    });
+    //alert("Checked in successfully!");
+    router.replace({ pathname: "/submit", params: { verified: "true" } });
   }
   return (
     <View style={styles.screen}>
@@ -116,7 +114,7 @@ export default function SpotScreen() {
             pressed && { opacity: 0.7 },
           ]}
         >
-          <Text style={styles.secondaryButtonText}>← Back to Home</Text>
+          <Text style={styles.secondaryButtonText}>← Back to Submit</Text>
         </Pressable>
       </View>
     </View>

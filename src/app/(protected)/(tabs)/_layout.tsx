@@ -22,7 +22,6 @@ export default function TabLayout() {
         options={{
           title: "Submit",
           headerTitle: "",
-          href: null,
           headerTintColor: "#6320c7",
           tabBarIcon: ({ color }) => (
             <Entypo name="location" size={24} color={color} />
