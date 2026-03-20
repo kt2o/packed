@@ -143,7 +143,11 @@ export default function TodoScreen() {
   const [showPicker, setShowPicker] = useState(false);
   const [selectedDate, setSelectedDate] = useState<Date | null>(null);
   const [activeTab, setActiveTab] = useState<"list" | "pomodoro">("list");
-  // for persistent timer state
+
+  // Teammate's new UI state
+  const [showAddForm, setShowAddForm] = useState(false);
+
+  // Persistent timer state
   const [minutes, setMinutes] = useState(25);
   const [seconds, setSeconds] = useState(0);
   const [isActive, setIsActive] = useState(false);
@@ -158,14 +162,12 @@ export default function TodoScreen() {
       interval = setInterval(() => {
         const now = Date.now();
         if (expirationTimeRef.current && now >= expirationTimeRef.current) {
-          // Time is up!
           setMinutes(0);
           setSeconds(0);
           setIsActive(false);
           expirationTimeRef.current = null;
           triggerCompletionAlert();
         } else if (expirationTimeRef.current) {
-          // Calculate remaining time based on the gap
           const diff = expirationTimeRef.current - now;
           setMinutes(Math.floor(diff / 1000 / 60));
           setSeconds(Math.floor((diff / 1000) % 60));
@@ -204,13 +206,11 @@ export default function TodoScreen() {
 
   const handleToggle = async () => {
     if (!isActive) {
-      // 1. Calculate the End Time
       const totalSeconds = minutes * 60 + seconds;
       const totalMs = totalSeconds * 1000;
       expirationTimeRef.current = Date.now() + totalMs;
       setIsActive(true);
 
-      // 2. Schedule the Background Notification
       if (totalSeconds > 0) {
         await Notifications.scheduleNotificationAsync({
           content: {
@@ -219,21 +219,18 @@ export default function TodoScreen() {
               isBreak ? "Break" : "Focus"
             } session is finished. Tap to return.`,
             data: { type: "pomodoro_end" },
-            sound: true, // This usually triggers the default vibration
+            sound: true,
           },
           trigger: {
             type: Notifications.SchedulableTriggerInputTypes.TIME_INTERVAL,
-            seconds: totalSeconds, // Fires exactly when the timer hits 0
+            seconds: totalSeconds,
           },
         });
       }
     } else {
-      // 3. If Paused: Stop the timer and KILL the scheduled notification
       setIsActive(false);
       expirationTimeRef.current = null;
       await Notifications.cancelAllScheduledNotificationsAsync();
-      // Note: If you have other reminders (like your To-Do deadlines),
-      // you might want to use specific Notification IDs instead of cancelAll.
     }
   };
 
@@ -257,14 +254,11 @@ export default function TodoScreen() {
 
   async function loadTodos() {
     if (!user) return;
-
     setLoading(true);
-
     const { data, error } = await supabase
       .from("todo_list")
       .select("*")
       .eq("user_id", user.id);
-
     if (error) {
       console.error("Error loading todos:", error.message);
     } else {
@@ -275,18 +269,9 @@ export default function TodoScreen() {
 
   async function handleAddTodo() {
     const trimmedTitle = title.trim();
-
-    if (!trimmedTitle) return;
-
-    if (!user) {
-      console.error("No user found");
-      return;
-    }
-
+    if (!trimmedTitle || !user) return;
     setAdding(true);
-
     const deadlineValue = selectedDate ? selectedDate.toISOString() : null;
-
     const { data, error } = await supabase
       .from("todo_list")
       .insert([
@@ -299,14 +284,12 @@ export default function TodoScreen() {
       ])
       .select()
       .single();
-
     if (error) {
       console.error("Error adding todo:", error.message);
     } else if (data) {
       setTodos((prev) => sortTodosByDeadline([data, ...prev]));
       setTitle("");
       setSelectedDate(null);
-
       const granted = await requestNotificationPermission();
       if (granted) {
         await scheduleDeadlineReminder(
@@ -315,7 +298,6 @@ export default function TodoScreen() {
         );
       }
     }
-
     setAdding(false);
   }
 
@@ -326,12 +308,6 @@ export default function TodoScreen() {
       .eq("id", item.id)
       .select()
       .single();
-
-    if (error) {
-      console.error("Error updating todo:", error.message);
-      return;
-    }
-
     if (data) {
       setTodos((prev) =>
         prev.map((todo) => (todo.id === item.id ? data : todo))
@@ -341,35 +317,20 @@ export default function TodoScreen() {
 
   async function deleteTodo(id: string) {
     const { error } = await supabase.from("todo_list").delete().eq("id", id);
-
-    if (error) {
-      console.error("Error deleting todo:", error.message);
-      return;
-    }
-
-    setTodos((prev) => prev.filter((todo) => todo.id !== id));
+    if (!error) setTodos((prev) => prev.filter((todo) => todo.id !== id));
   }
 
   async function updateTodo(id: string) {
     const trimmedTitle = editingTitle.trim();
     if (!trimmedTitle) return;
-
     const { data, error } = await supabase
       .from("todo_list")
       .update({ title: trimmedTitle })
       .eq("id", id)
       .select()
       .single();
-
-    if (error) {
-      console.error("Error updating todo:", error.message);
-      return;
-    }
-
-    if (data) {
+    if (data)
       setTodos((prev) => prev.map((todo) => (todo.id === id ? data : todo)));
-    }
-
     setEditingId(null);
     setEditingTitle("");
   }
@@ -378,24 +339,15 @@ export default function TodoScreen() {
     const { status: existingStatus } =
       await Notifications.getPermissionsAsync();
     let finalStatus = existingStatus;
-
     if (existingStatus !== "granted") {
       const { status } = await Notifications.requestPermissionsAsync();
       finalStatus = status;
     }
-
-    if (finalStatus !== "granted") {
-      console.error("Notification permission not granted");
-      return false;
-    }
-
-    return true;
+    return finalStatus === "granted";
   }
 
   useEffect(() => {
-    if (user) {
-      loadTodos();
-    }
+    if (user) loadTodos();
   }, [user]);
 
   const filteredTodos = todos.filter((todo) => {
@@ -444,73 +396,87 @@ export default function TodoScreen() {
       {activeTab === "list" ? (
         <>
           <Text style={styles.header}>My To-Do List</Text>
-          <View style={styles.inputColumn}>
-            <TextInput
-              value={title}
-              onChangeText={setTitle}
-              placeholder="Enter a task"
-              style={styles.input}
-            />
-            <TouchableOpacity
-              style={styles.input}
-              onPress={() => setShowPicker((prev) => !prev)}
-              activeOpacity={0.8}
-            >
-              <Text
-                style={[
-                  styles.inputLikeText,
-                  !selectedDate && styles.placeholderText,
-                ]}
+
+          {/* Teammate's Collapsible Form */}
+          <TouchableOpacity
+            style={styles.dropdownHeader}
+            onPress={() => setShowAddForm((prev) => !prev)}
+            activeOpacity={0.8}
+          >
+            <Text style={styles.dropdownHeaderText}>
+              {showAddForm ? "Hide Add Task" : "Add New Task"}
+            </Text>
+            <Text style={styles.dropdownArrow}>{showAddForm ? "▲" : "▼"}</Text>
+          </TouchableOpacity>
+
+          {showAddForm && (
+            <View style={styles.dropdownContent}>
+              <TextInput
+                value={title}
+                onChangeText={setTitle}
+                placeholder="Enter a task"
+                style={styles.input}
+              />
+              <TouchableOpacity
+                style={styles.input}
+                onPress={() => setShowPicker((prev) => !prev)}
+                activeOpacity={0.8}
               >
-                {selectedDate
-                  ? selectedDate.toLocaleDateString()
-                  : "Select Deadline"}
-              </Text>
-            </TouchableOpacity>
-            <TouchableOpacity
-              style={styles.addButton}
-              onPress={handleAddTodo}
-              disabled={adding}
-            >
-              <Text style={styles.addButtonText}>
-                {adding ? "Adding..." : "Add"}
-              </Text>
-            </TouchableOpacity>
-          </View>
+                <Text
+                  style={[
+                    styles.inputLikeText,
+                    !selectedDate && styles.placeholderText,
+                  ]}
+                >
+                  {selectedDate
+                    ? selectedDate.toLocaleDateString()
+                    : "Select Deadline"}
+                </Text>
+              </TouchableOpacity>
+
+              {showPicker && (
+                <>
+                  <DateTimePicker
+                    value={selectedDate || new Date()}
+                    mode="date"
+                    display="inline"
+                    onChange={(event, date) => date && setSelectedDate(date)}
+                    style={{ marginBottom: 10 }}
+                  />
+                  <TouchableOpacity
+                    onPress={() => setShowPicker(false)}
+                    style={styles.doneButton}
+                  >
+                    <Text style={styles.doneButtonText}>Done</Text>
+                  </TouchableOpacity>
+                </>
+              )}
+
+              <TouchableOpacity
+                style={styles.addButton}
+                onPress={handleAddTodo}
+                disabled={adding}
+              >
+                <Text style={styles.addButtonText}>
+                  {adding ? "Adding..." : "Add"}
+                </Text>
+              </TouchableOpacity>
+            </View>
+          )}
 
           <View style={styles.filterRow}>
-            <TouchableOpacity onPress={() => setFilter("all")}>
-              <Text
-                style={[
-                  styles.filterText,
-                  filter === "all" && styles.activeFilter,
-                ]}
-              >
-                All
-              </Text>
-            </TouchableOpacity>
-
-            <TouchableOpacity onPress={() => setFilter("active")}>
-              <Text
-                style={[
-                  styles.filterText,
-                  filter === "active" && styles.activeFilter,
-                ]}
-              >
-                Active
-              </Text>
-            </TouchableOpacity>
-
-            <TouchableOpacity onPress={() => setFilter("completed")}>
-              <Text
-                style={[
-                  styles.filterText,
-                  filter === "completed" && styles.activeFilter,
-                ]}
-              >
-                Completed
-              </Text>
-            </TouchableOpacity>
+            {["all", "active", "completed"].map((f) => (
+              <TouchableOpacity key={f} onPress={() => setFilter(f as any)}>
+                <Text
+                  style={[
+                    styles.filterText,
+                    filter === f && styles.activeFilter,
+                  ]}
+                >
+                  {f.charAt(0).toUpperCase() + f.slice(1)}
+                </Text>
+              </TouchableOpacity>
+            ))}
           </View>
 
           {loading ? (
@@ -520,13 +486,11 @@ export default function TodoScreen() {
               data={filteredTodos}
               keyExtractor={(item) => item.id}
               renderItem={({ item }) => {
-                const deadlineStatus = item.is_completed
+                const status = item.is_completed
                   ? "completed"
                   : getDeadlineStatus(item.deadline_at);
-                const deadlineStyle = getDeadlineStyle(deadlineStatus);
-
                 return (
-                  <View style={[styles.todoItem, deadlineStyle]}>
+                  <View style={[styles.todoItem, getDeadlineStyle(status)]}>
                     {editingId === item.id ? (
                       <View style={styles.editRow}>
                         <TextInput
@@ -560,22 +524,18 @@ export default function TodoScreen() {
                           >
                             {item.is_completed ? "✅" : "⬜"} {item.title}
                           </Text>
-
-                          {item.deadline_at ? (
+                          {item.deadline_at && (
                             <Text style={styles.deadlineText}>
                               Due:{" "}
                               {new Date(item.deadline_at).toLocaleDateString()}
                             </Text>
-                          ) : null}
-
-                          {deadlineStatus !== "none" &&
-                          getDeadlineLabel(deadlineStatus) ? (
+                          )}
+                          {status !== "none" && getDeadlineLabel(status) && (
                             <Text style={styles.deadlineLabel}>
-                              {getDeadlineLabel(deadlineStatus)}
+                              {getDeadlineLabel(status)}
                             </Text>
-                          ) : null}
+                          )}
                         </TouchableOpacity>
-
                         <View style={styles.actionsRow}>
                           <TouchableOpacity
                             onPress={() => {
@@ -585,7 +545,6 @@ export default function TodoScreen() {
                           >
                             <Text style={styles.editText}>Edit</Text>
                           </TouchableOpacity>
-
                           <TouchableOpacity onPress={() => deleteTodo(item.id)}>
                             <Text style={styles.deleteText}>Delete</Text>
                           </TouchableOpacity>
@@ -596,19 +555,6 @@ export default function TodoScreen() {
                 );
               }}
               ListEmptyComponent={<Text>No To-Do's yet.</Text>}
-            />
-          )}
-          {showPicker && (
-            <DateTimePicker
-              value={selectedDate || new Date()}
-              mode="date"
-              display="inline"
-              onChange={(event, date) => {
-                if (date) {
-                  setSelectedDate(date);
-                }
-              }}
-              style={{ marginBottom: 10 }}
             />
           )}
         </>
@@ -633,25 +579,18 @@ export default function TodoScreen() {
 }
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    padding: 20,
-    paddingTop: 60,
-  },
+  container: { flex: 1, padding: 20, paddingTop: 60 },
   header: {
     fontSize: 24,
     fontWeight: "bold",
     marginBottom: 20,
-  },
-  inputRow: {
-    flexDirection: "row",
-    marginBottom: 20,
-    gap: 10,
+    textAlign: "center",
   },
   input: {
     borderWidth: 1,
     borderColor: "#ccc",
     borderRadius: 8,
+    marginBottom: 8,
     paddingHorizontal: 12,
     height: 44,
     justifyContent: "center",
@@ -661,14 +600,12 @@ const styles = StyleSheet.create({
   addButton: {
     backgroundColor: "#6320c7",
     padding: 8,
+    marginTop: 16,
     borderRadius: 8,
     justifyContent: "center",
     alignItems: "center",
   },
-  addButtonText: {
-    color: "#fff",
-    fontWeight: "600",
-  },
+  addButtonText: { color: "#fff", fontWeight: "600" },
   todoItem: {
     flexDirection: "row",
     alignItems: "center",
@@ -680,51 +617,21 @@ const styles = StyleSheet.create({
     borderRadius: 10,
     marginBottom: 10,
   },
-  todoText: {
-    fontSize: 16,
-  },
-  completed: {
-    textDecorationLine: "line-through",
-    color: "gray",
-  },
-  todoContent: {
-    flex: 1,
-  },
-  deleteText: {
-    color: "red",
-    fontWeight: "600",
-    marginLeft: 12,
-  },
+  todoText: { fontSize: 16 },
+  completed: { textDecorationLine: "line-through", color: "gray" },
+  todoContent: { flex: 1 },
+  deleteText: { color: "red", fontWeight: "600", marginLeft: 12 },
   filterRow: {
     flexDirection: "row",
     justifyContent: "space-between",
     marginBottom: 16,
     paddingHorizontal: 4,
   },
-  filterText: {
-    fontSize: 16,
-    color: "#444",
-  },
-  activeFilter: {
-    color: "#6320c7",
-    fontWeight: "700",
-  },
-  actionsRow: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 12,
-  },
-  editText: {
-    color: "#6320c7",
-    fontWeight: "600",
-    marginRight: 8,
-  },
-  editRow: {
-    flex: 1,
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 8,
-  },
+  filterText: { fontSize: 16, color: "#444" },
+  activeFilter: { color: "#6320c7", fontWeight: "700" },
+  actionsRow: { flexDirection: "row", alignItems: "center", gap: 12 },
+  editText: { color: "#6320c7", fontWeight: "600", marginRight: 8 },
+  editRow: { flex: 1, flexDirection: "row", alignItems: "center", gap: 8 },
   editInput: {
     flex: 1,
     borderWidth: 1,
@@ -734,58 +641,46 @@ const styles = StyleSheet.create({
     height: 40,
     backgroundColor: "#fff",
   },
-  saveText: {
-    color: "#6320c7",
-    fontWeight: "700",
-  },
-  cancelText: {
-    color: "gray",
-    fontWeight: "600",
-  },
-  deadlineText: {
-    fontSize: 12,
-    color: "#555",
-    marginTop: 4,
-  },
-  inputColumn: {
-    marginBottom: 20,
-    gap: 10,
-  },
+  saveText: { color: "#6320c7", fontWeight: "700" },
+  cancelText: { color: "gray", fontWeight: "600" },
+  deadlineText: { fontSize: 12, color: "#555", marginTop: 4 },
   deadlineLabel: {
     fontSize: 11,
     fontWeight: "600",
     marginTop: 2,
     color: "#444",
   },
-  inputLikeText: {
-    fontSize: 16,
-    lineHeight: 20,
-    color: "#000",
-  },
-  placeholderText: {
-    color: "#999",
-  },
+  inputLikeText: { fontSize: 16, lineHeight: 20, color: "#000" },
+  placeholderText: { color: "#999" },
   tabSwitcher: {
     flexDirection: "row",
     marginBottom: 20,
     borderBottomWidth: 1,
     borderBottomColor: "#eee",
   },
-  tabItem: {
-    flex: 1,
-    paddingVertical: 12,
+  tabItem: { flex: 1, paddingVertical: 12, alignItems: "center" },
+  activeTabBorder: { borderBottomWidth: 3, borderBottomColor: "#6320c7" },
+  tabLabel: { fontSize: 16, color: "#999", fontWeight: "600" },
+  activeTabLabel: { color: "#6320c7" },
+  // Teammate's specific styles
+  dropdownHeader: {
+    flexDirection: "row",
+    justifyContent: "space-between",
     alignItems: "center",
+    backgroundColor: "#6320c7",
+    paddingHorizontal: 14,
+    paddingVertical: 12,
+    borderRadius: 10,
+    marginBottom: 16,
   },
-  activeTabBorder: {
-    borderBottomWidth: 3,
-    borderBottomColor: "#6320c7",
+  dropdownHeaderText: { color: "#fff", fontSize: 16, fontWeight: "600" },
+  dropdownArrow: { color: "#fff", fontSize: 16, fontWeight: "700" },
+  dropdownContent: {
+    backgroundColor: "#f8f6fc",
+    borderRadius: 10,
+    padding: 12,
+    marginBottom: 16,
   },
-  tabLabel: {
-    fontSize: 16,
-    color: "#999",
-    fontWeight: "600",
-  },
-  activeTabLabel: {
-    color: "#6320c7",
-  },
+  doneButton: { alignSelf: "flex-end", marginBottom: 10 },
+  doneButtonText: { color: "#6320c7", fontWeight: "600" },
 });
