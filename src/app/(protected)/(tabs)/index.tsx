@@ -1,12 +1,13 @@
 import { useEffect, useState, useCallback } from "react";
 import { useFocusEffect, useRouter } from "expo-router";
 import { StyleSheet, ScrollView, RefreshControl, View } from "react-native";
+import { supabase } from "../../../lib/supabase-client";
 import React from "react";
 
-import { useSupabase } from "../../../lib/supabase-client";
 import LocationCard from "../../../components/LocationCard";
 import { spots } from "../../../config/studySpots";
 import FloorAccordion from "src/components/FloorAccordion";
+
 
 function getStatus(count: number, capacity: number) {
   const ratio = count / capacity;
@@ -18,7 +19,7 @@ function getStatus(count: number, capacity: number) {
 
 export default function HomeScreen() {
   const router = useRouter();
-  const supabase = useSupabase();
+
 
   const [spotsWithStatus, setSpotsWithStatus] = useState([]);
   const [refreshing, setRefreshing] = useState(false);
