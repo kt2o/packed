@@ -2,7 +2,7 @@ import { useLocalSearchParams } from "expo-router";
 import { View, Text, StyleSheet, Pressable } from "react-native";
 import { spots } from "../../config/studySpots";
 import { getCurrentLocation } from "../../lib/location";
-import { useSupabase } from "../../lib/supabase-client";
+import { supabase } from "src/lib/supabase-client";
 import { getDistanceMeters } from "../../lib/distance";
 import * as Location from "expo-location";
 import { useRouter } from "expo-router";
@@ -11,7 +11,7 @@ export default function SpotScreen() {
   console.log("Spot Details screen mounted");
   const router = useRouter();
   const { id } = useLocalSearchParams();
-  const supabase = useSupabase();
+
   const DEV_MODE = true;
 
   const DEV_USER_ID = "6759bbaf-0fad-4c73-910f-1ee43570d3d1";
