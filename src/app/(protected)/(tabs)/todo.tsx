@@ -129,6 +129,7 @@ export default function TodoScreen() {
     const [editingTitle, setEditingTitle] = useState('');
     const [showPicker, setShowPicker] = useState(false);
     const [selectedDate, setSelectedDate] = useState<Date | null>(null);
+    const [showAddForm, setShowAddForm] = useState(false);
 
     const { user } = useUser();
 
@@ -291,39 +292,78 @@ export default function TodoScreen() {
         <View style={styles.container}>
             <Text style={styles.header}>My To-Do List</Text>
 
-            <View style={styles.inputColumn}>
-                <TextInput
-                    value={title}
-                    onChangeText={setTitle}
-                    placeholder="Enter a task"
-                    style={styles.input}
-                />
-                <TouchableOpacity
-                    style={styles.input}
-                    onPress={() => setShowPicker((prev) => !prev)}
-                    activeOpacity={0.8}
-                >
-                    <Text
-                        style={[
-                            styles.inputLikeText,
-                            !selectedDate && styles.placeholderText,
-                        ]}
+            <TouchableOpacity
+                style={styles.dropdownHeader}
+                onPress={() => setShowAddForm((prev) => !prev)}
+                activeOpacity={0.8}
+            >
+                <Text style={styles.dropdownHeaderText}>
+                    {showAddForm ? 'Hide Add Task' : 'Add New Task'}
+                </Text>
+                <Text style={styles.dropdownArrow}>
+                    {showAddForm ? '▲' : '▼'}
+                </Text>
+            </TouchableOpacity>
+
+            {showAddForm && (
+                <View style={styles.dropdownContent}>
+                    <TextInput
+                        value={title}
+                        onChangeText={setTitle}
+                        placeholder="Enter a task"
+                        style={styles.input}
+                    />
+
+                    <TouchableOpacity
+                        style={styles.input}
+                        onPress={() => setShowPicker((prev) => !prev)}
+                        activeOpacity={0.8}
                     >
-                        {selectedDate
-                            ? selectedDate.toLocaleDateString()
-                            : 'Select Deadline'}
-                    </Text>
-                </TouchableOpacity>
-                <TouchableOpacity
-                    style={styles.addButton}
-                    onPress={handleAddTodo}
-                    disabled={adding}
-                >
-                    <Text style={styles.addButtonText}>
-                        {adding ? 'Adding...' : 'Add'}
-                    </Text>
-                </TouchableOpacity>
-            </View>
+                        <Text
+                            style={[
+                                styles.inputLikeText,
+                                !selectedDate && styles.placeholderText,
+                            ]}
+                        >
+                            {selectedDate
+                                ? selectedDate.toLocaleDateString()
+                                : 'Select Deadline'}
+                        </Text>
+                    </TouchableOpacity>
+
+                    {showPicker && (
+                        <>
+                            <DateTimePicker
+                                value={selectedDate || new Date()}
+                                mode="date"
+                                display="inline"
+                                onChange={(event, date) => {
+                                    if (date) {
+                                        setSelectedDate(date);
+                                    }
+                                }}
+                                style={{ marginBottom: 10 }}
+                            />
+                            <TouchableOpacity
+                                onPress={() => setShowPicker(false)}
+                                style={styles.doneButton}
+                            >
+                                <Text style={styles.doneButtonText}>Done</Text>
+                            </TouchableOpacity>
+                        </>
+                    )}
+
+                    <TouchableOpacity
+                        style={styles.addButton}
+                        onPress={handleAddTodo}
+                        disabled={adding}
+                    >
+                        <Text style={styles.addButtonText}>
+                            {adding ? 'Adding...' : 'Add'}
+                        </Text>
+                    </TouchableOpacity>
+                </View>
+            )}
 
             <View style={styles.filterRow}>
                 <TouchableOpacity onPress={() => setFilter('all')}>
@@ -404,7 +444,6 @@ export default function TodoScreen() {
                                                     {getDeadlineLabel(deadlineStatus)}
                                                 </Text>
                                             ) : null}
-
                                         </TouchableOpacity>
 
                                         <View style={styles.actionsRow}>
@@ -429,19 +468,6 @@ export default function TodoScreen() {
                     ListEmptyComponent={<Text>No To-Do's yet.</Text>}
                 />
             )}
-            {showPicker && (
-                <DateTimePicker
-                    value={selectedDate || new Date()}
-                    mode="date"
-                    display="inline"
-                    onChange={(event, date) => {
-                        if (date) {
-                            setSelectedDate(date);
-                        }
-                    }}
-                    style={{ marginBottom: 10 }}
-                />
-            )}
         </View>
     );
 }
@@ -456,6 +482,7 @@ const styles = StyleSheet.create({
         fontSize: 24,
         fontWeight: 'bold',
         marginBottom: 20,
+        textAlign: 'center',
     },
     inputRow: {
         flexDirection: 'row',
@@ -466,6 +493,7 @@ const styles = StyleSheet.create({
         borderWidth: 1,
         borderColor: '#ccc',
         borderRadius: 8,
+        marginBottom: 8,
         paddingHorizontal: 12,
         height: 44,
         justifyContent: 'center',
@@ -475,6 +503,7 @@ const styles = StyleSheet.create({
     addButton: {
         backgroundColor: '#6320c7',
         padding: 8,
+        marginTop: 16,
         borderRadius: 8,
         justifyContent: 'center',
         alignItems: 'center',
@@ -578,5 +607,39 @@ const styles = StyleSheet.create({
     },
     placeholderText: {
         color: '#999',
+    },
+    dropdownHeader: {
+        flexDirection: 'row',
+        justifyContent: 'space-between',
+        alignItems: 'center',
+        backgroundColor: '#6320c7',
+        paddingHorizontal: 14,
+        paddingVertical: 12,
+        borderRadius: 10,
+        marginBottom: 16,
+    },
+    dropdownHeaderText: {
+        color: '#fff',
+        fontSize: 16,
+        fontWeight: '600',
+    },
+    dropdownArrow: {
+        color: '#fff',
+        fontSize: 16,
+        fontWeight: '700',
+    },
+    dropdownContent: {
+        backgroundColor: '#f8f6fc',
+        borderRadius: 10,
+        padding: 12,
+        marginBottom: 16,
+    },
+    doneButton: {
+        alignSelf: 'flex-end',
+        marginBottom: 10,
+    },
+    doneButtonText: {
+        color: '#6320c7',
+        fontWeight: '600',
     },
 });
