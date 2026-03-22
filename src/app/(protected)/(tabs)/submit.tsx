@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { supabase } from "../../../lib/supabase-client";
 import type { Status } from "../../../types/status";
 import { useLocalSearchParams, useRouter } from "expo-router";
@@ -21,12 +21,21 @@ export default function SubmitScreen() {
   const router = useRouter();
   const { user } = useUser();
 
-  const { location } = useLocalSearchParams();
+  const { verified } = useLocalSearchParams<{ verified: string }>();
 
   const [selectedSpot, setSelectedSpot] = useState<string>("");
   const [selectedFloor, setSelectedFloor] = useState<string>("");
   const [selectedStatus, setSelectedStatus] = useState<Status>("empty");
   const [submitting, setSubmitting] = useState(false);
+
+  useEffect(() => {
+      if (verified === "true") {
+    submitToSupabase();
+  } else {
+    setSubmitting(false)
+    //Alert.alert("Check-in Failed", "You are not close enough. Please select another location.");
+  }
+}, [verified]);
 
   const locations = useMemo(() => {
     return spots.map((spot) => ({
@@ -36,47 +45,55 @@ export default function SubmitScreen() {
   }, [spots]);
 
   const floors = useMemo(
-  () => spots.find((s) => s.id === location)?.floors ?? [],
-  [location]
-);
+    () => spots.find((s) => s.id === selectedSpot)?.floors ?? [],
+    [selectedSpot]
+  );
 
   const handleSubmit = async () => {
-    if (!location) {
+    if (!selectedSpot) {
       Alert.alert("Error", "No location was provided.");
       return;
     }
 
     setSubmitting(true);
 
-    const { data: row } = await supabase
-     .from("user_database")
-     .select("id")
-     .eq("user_email", user.primaryEmailAddress.emailAddress)
-     .single();
+    router.push({
+    pathname: "/spot/[id]",
+    params: { id: selectedSpot, returnTo: "submit" },  // ← pass returnTo so spot page knows where to go back
+  });
 
-     const userId = user.id;
+  };
 
-    const { error } = await supabase.from("study_spot_status").insert([
-      {
-        spot_id: location,
-        status: selectedStatus,
-        user_id: userId,
-        floor_id: selectedFloor
-      },
-    ]);
+  const submitToSupabase = async () => {
+  const { data: row } = await supabase
+    .from("user_database")
+    .select("id")
+    .eq("user_email", user.primaryEmailAddress.emailAddress)
+    .single();
 
-    setSubmitting(false);
+  const userId = user.id;
 
-    if (error) {
+  const { error } = await supabase.from("study_spot_status").insert([
+    {
+      spot_id: selectedSpot,
+      status: selectedStatus,
+      user_id: userId,
+      floor_id: selectedFloor,
+    },
+  ]);
+
+  setSubmitting(false);
+
+  if (error) {
       console.error("Insert error:", error);
       Alert.alert("Error", error.message);
       return;
     }
 
-    Alert.alert("Success", `Reported ${location} as ${selectedStatus}`, [
-      { text: "OK", onPress: () => router.back() },
-    ]);
-  };
+  Alert.alert("Success", `Reported as ${selectedStatus}`, [
+    { text: "OK", onPress: () => router.back() },
+  ]);
+};
 
   return (
     <ScrollView
@@ -84,13 +101,14 @@ export default function SubmitScreen() {
       contentContainerStyle={styles.scrollView}
     >
       <Text style={styles.title}>Study Location Status</Text>
-      {/* <LocationDropDown
+      <LocationDropDown
         label={"Location"}
         data={locations}
         value={selectedSpot}
         onChange={setSelectedSpot}
         placeholder="Where are you?"
-      ></LocationDropDown> */}
+      ></LocationDropDown>
+      
       {floors.length > 0 && (
         <View style={styles.inputContainer}>
           <Text style={styles.label}>Which floor are you on?</Text>

@@ -1,4 +1,5 @@
-import { Stack } from "expo-router";
+
+import { Slot, Stack } from "expo-router";
 import { ClerkProvider } from "@clerk/clerk-expo";
 import {
   ActivityIndicator,
@@ -7,6 +8,11 @@ import {
 import { tokenCache } from "@clerk/clerk-expo/token-cache";
 import { useAuth } from "@clerk/clerk-expo";
 import { SupabaseProvider } from "src/providers/SupabaseProvider";
+
+import { useEffect } from 'react';
+import { registerForPushNotificationsAsync, saveTokenToSupabase } from "src/lib/notifications";
+
+
 
 function RootStack() {
   const { isSignedIn, isLoaded } = useAuth();
@@ -30,7 +36,13 @@ function RootStack() {
   );
 }
 
+
 export default function RootLayout() {
+  useEffect(() => {
+    registerForPushNotificationsAsync().then(token => {
+      saveTokenToSupabase(token);
+    });
+  }, []);
   return (
     <ClerkProvider tokenCache={tokenCache}>
       <SupabaseProvider>

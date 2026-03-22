@@ -11,6 +11,7 @@ type Floor = NonNullable<(typeof spots)[number]["floors"]>[number];
 type Props = {
   floors: Floor[];
   statusByFloorId: Record<string, string>;
+  isOpen: boolean;
 };
 
 const statusColor: Record<string, string> = {
@@ -20,15 +21,10 @@ const statusColor: Record<string, string> = {
         unknown: "gray",
     };
 
-export default function FloorAccordion({ floors, statusByFloorId }: Props) {
-  const [isOpen, setIsOpen] = useState(false);
+export default function FloorAccordion({ floors, statusByFloorId, isOpen }: Props) {
 
   return (
     <View>
-      <TouchableOpacity onPress={() => setIsOpen((prev) => !prev)} style={{ alignItems: "center" }}>
-        <MaterialIcons name={isOpen ? "keyboard-arrow-up" : "keyboard-arrow-down"} size={24} />
-      </TouchableOpacity>
-
       {isOpen && floors.map((floor) => (
         <List.Item
           key={floor.id}

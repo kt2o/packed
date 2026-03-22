@@ -1,12 +1,13 @@
 import { useEffect, useState, useCallback } from "react";
 import { useFocusEffect, useRouter } from "expo-router";
 import { StyleSheet, ScrollView, RefreshControl, View } from "react-native";
+import { supabase } from "../../../lib/supabase-client";
 import React from "react";
 
-import { useSupabase } from "../../../lib/supabase-client";
 import LocationCard from "../../../components/LocationCard";
 import { spots } from "../../../config/studySpots";
 import FloorAccordion from "src/components/FloorAccordion";
+
 
 function getStatus(count: number, capacity: number) {
   const ratio = count / capacity;
@@ -18,7 +19,7 @@ function getStatus(count: number, capacity: number) {
 
 export default function HomeScreen() {
   const router = useRouter();
-  const supabase = useSupabase();
+
 
   const [spotsWithStatus, setSpotsWithStatus] = useState([]);
   const [refreshing, setRefreshing] = useState(false);
@@ -99,6 +100,7 @@ export default function HomeScreen() {
     setRefreshing(false);
   };
 
+  const [openId, setOpenId] = useState<string | null>(null);
 
 return (
     <ScrollView
@@ -109,7 +111,6 @@ return (
     >
       {spotsWithStatus.map((spot) => {
         const percentage = Math.round((spot.count / spot.capacity) * 100);
-
         return (
           <View key={spot.id}>
           <LocationCard
@@ -121,16 +122,21 @@ return (
             count={spot.count}
             capacity={spot.capacity}
             percentage={percentage}
-            onPress={() =>
+            onPress={
+              () => setOpenId((prev) => prev === spot.id ? null : spot.id)
+              /* () =>
               router.push({
                 pathname: "/spot/[id]",
                 params: { id: spot.id },
-              })
+              }) */
             }
           />
-          {spot.floors && spot.floors.length > 0 && (
+          {/* {spot.floors && spot.floors.length > 0 && (
             <FloorAccordion floors={spot.floors} statusByFloorId={statusByFloorId} />
-          )}
+          )} */}
+          {spot.floors && spot.floors.length > 0 && (
+    <FloorAccordion isOpen={openId === spot.id} floors={spot.floors} statusByFloorId={statusByFloorId} />
+  )}
           </View>
         );
       })}
