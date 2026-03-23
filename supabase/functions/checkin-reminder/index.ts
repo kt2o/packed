@@ -20,7 +20,7 @@ Deno.env.get("EXPO_PUBLIC_SUPABASE_SERVICE_ROLE")!
 
 console.log("Fetching due check-ins...");
 
-const cutoff = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString();
+const cutoff = new Date(Date.now() - 30 * 1000).toISOString(); // 30 seconds for testing
   console.log("Cutoff:", cutoff);
 
 // 1. Find check-ins older than cutoff
