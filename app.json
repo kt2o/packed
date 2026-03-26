@@ -17,8 +17,10 @@
     "ios": {
       "supportsTablet": true,
       "bundleIdentifier": "com.anonymous.Packed",
-      "googleServicesFile": "./GoogleService-Info.plist"
-
+      "googleServicesFile": "./GoogleService-Info.plist",
+      "infoPlist": {
+        "ITSAppUsesNonExemptEncryption": false
+      }
     },
     "android": {
       "adaptiveIcon": {
@@ -40,10 +42,7 @@
     },
     "plugins": [
       "expo-router",
-
-      "@react-native-community/datetimepicker"
-    ,
-
+      "@react-native-community/datetimepicker",
       "expo-notifications"
     ],
     "extra": {
@@ -53,6 +52,5 @@
       },
       "firebaseServerKey": "YOUR_FCM_SERVER_KEY_HERE"
     }
-
   }
 }
