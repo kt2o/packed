@@ -12,6 +12,7 @@ import {
   AppStateStatus,
   Vibration,
   Alert,
+  Platform,
 } from "react-native";
 import DateTimePicker from "@react-native-community/datetimepicker";
 import * as Notifications from "expo-notifications";
@@ -188,9 +189,8 @@ export default function TodoScreen() {
         await Notifications.scheduleNotificationAsync({
           content: {
             title: "Time's Up!",
-            body: `Your ${
-              isBreak ? "Break" : "Focus"
-            } session is finished. Tap to return.`,
+            body: `Your ${isBreak ? "Break" : "Focus"
+              } session is finished. Tap to return.`,
             data: { type: "pomodoro_end" },
             sound: true,
           },
@@ -391,7 +391,7 @@ export default function TodoScreen() {
               />
               <TouchableOpacity
                 style={styles.input}
-                onPress={() => setShowPicker((prev) => !prev)}
+                onPress={() => setShowPicker(true)}
                 activeOpacity={0.8}
               >
                 <Text
@@ -411,16 +411,33 @@ export default function TodoScreen() {
                   <DateTimePicker
                     value={selectedDate || new Date()}
                     mode="date"
-                    display="inline"
-                    onChange={(event, date) => date && setSelectedDate(date)}
+                    display={Platform.OS === "ios" ? "inline" : "default"}
+                    onChange={(event, date) => {
+                      if (Platform.OS === "android") {
+                        setShowPicker(false);
+
+                        if (event.type === "set" && date) {
+                          setSelectedDate(date);
+                        }
+
+                        return;
+                      }
+
+                      if (date) {
+                        setSelectedDate(date);
+                      }
+                    }}
                     style={{ marginBottom: 10 }}
                   />
-                  <TouchableOpacity
-                    onPress={() => setShowPicker(false)}
-                    style={styles.doneButton}
-                  >
-                    <Text style={styles.doneButtonText}>Done</Text>
-                  </TouchableOpacity>
+
+                  {Platform.OS === "ios" && (
+                    <TouchableOpacity
+                      onPress={() => setShowPicker(false)}
+                      style={styles.doneButton}
+                    >
+                      <Text style={styles.doneButtonText}>Done</Text>
+                    </TouchableOpacity>
+                  )}
                 </>
               )}
 
