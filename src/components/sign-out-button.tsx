@@ -1,6 +1,6 @@
 import { useClerk } from "@clerk/clerk-expo";
 import { useRouter } from "expo-router";
-import { Pressable, StyleSheet, Text } from "react-native";
+import { Pressable, StyleSheet, Text, Alert } from "react-native";
 
 export const SignOutButton = () => {
   // Use `useClerk()` to access the `signOut()` function
@@ -19,10 +19,24 @@ export const SignOutButton = () => {
     }
   };
 
+  const onPressSignOut = () => {
+    Alert.alert("Sign Out", "Are you sure you want to sign out?", [
+      {
+        text: "Cancel",
+        style: "cancel",
+      },
+      {
+        text: "Sign Out",
+        style: "destructive",
+        onPress: handleSignOut,
+      },
+    ]);
+  };
+
   return (
     <Pressable
       style={({ pressed }) => [styles.button, pressed && styles.buttonPressed]}
-      onPress={handleSignOut}
+      onPress={onPressSignOut}
     >
       <Text style={styles.buttonText}>Sign out</Text>
     </Pressable>
