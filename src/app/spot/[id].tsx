@@ -2,7 +2,7 @@ import { useLocalSearchParams } from "expo-router";
 import { View, Text, StyleSheet, Pressable } from "react-native";
 import { spots } from "../../config/studySpots";
 import { getCurrentLocation } from "../../lib/location";
-import { supabase } from "src/lib/supabase-client";
+import { useSupabase } from "src/lib/supabase-client";
 import { getDistanceMeters } from "../../lib/distance";
 import * as Location from "expo-location";
 import { useRouter } from "expo-router";
@@ -18,6 +18,8 @@ export default function SpotScreen() {
   const DEV_USER_ID = "6759bbaf-0fad-4c73-910f-1ee43570d3d1";
 
   const spot = spots.find((s) => s.id === id);
+
+  const supabase = useSupabase();
 
   async function handleCheckin() {
     //Check for Location

@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import { supabase } from "../../../lib/supabase-client";
+import { useSupabase } from "../../../lib/supabase-client";
 import type { Status } from "../../../types/status";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { spots } from "src/config/studySpots";
@@ -20,6 +20,8 @@ import LocationDropDown from "../../../components/LocationDropDown";
 export default function SubmitScreen() {
   const router = useRouter();
   const { user } = useUser();
+  const supabase = useSupabase();
+
 
   const { verified } = useLocalSearchParams<{ verified: string }>();
 
@@ -65,6 +67,7 @@ export default function SubmitScreen() {
   };
 
   const submitToSupabase = async () => {
+
   const { data: row } = await supabase
     .from("user_database")
     .select("id")

@@ -1,6 +1,6 @@
-import { supabase } from "../../../lib/supabase-client";
+import { useSupabase } from "../../../lib/supabase-client";
 import { useUser } from "@clerk/clerk-expo";
-import { useEffect, useState, useRef } from "react";
+import { useEffect, useState, useRef, useMemo } from "react";
 import {
   View,
   Text,
@@ -133,105 +133,41 @@ function sortTodosByDeadline(items: Todo[]) {
 }
 
 export default function TodoScreen() {
+  // 1. HOOKS
+  const { user } = useUser();
+  const supabase = useSupabase();
+
+  // 2. STATE
   const [todos, setTodos] = useState<Todo[]>([]);
   const [loading, setLoading] = useState(true);
+  const [isInitialLoad, setIsInitialLoad] = useState(false);
   const [title, setTitle] = useState("");
   const [adding, setAdding] = useState(false);
   const [filter, setFilter] = useState<"all" | "active" | "completed">("all");
   const [editingId, setEditingId] = useState<string | null>(null);
-
   const [editingTitle, setEditingTitle] = useState("");
   const [showPicker, setShowPicker] = useState(false);
   const [selectedDate, setSelectedDate] = useState<Date | null>(null);
   const [activeTab, setActiveTab] = useState<"list" | "pomodoro">("list");
-
   const [showAddForm, setShowAddForm] = useState(false);
 
-  // persistent timer state
+  // Timer State
   const [minutes, setMinutes] = useState(25);
   const [seconds, setSeconds] = useState(0);
   const [isActive, setIsActive] = useState(false);
   const [isBreak, setIsBreak] = useState(false);
-
   const expirationTimeRef = useRef<number | null>(null);
 
-  // handle backgrounding
-  useEffect(() => {
-    let interval: ReturnType<typeof setInterval>;
-    if (isActive) {
-      interval = setInterval(() => {
-        const now = Date.now();
-        if (expirationTimeRef.current && now >= expirationTimeRef.current) {
-          setMinutes(0);
-          setSeconds(0);
-          setIsActive(false);
-          expirationTimeRef.current = null;
-          triggerCompletionAlert();
-        } else if (expirationTimeRef.current) {
-          const diff = expirationTimeRef.current - now;
-          setMinutes(Math.floor(diff / 1000 / 60));
-          setSeconds(Math.floor((diff / 1000) % 60));
-        }
-      }, 1000);
-    }
-    return () => clearInterval(interval);
-  }, [isActive]);
-
-  const handleToggle = async () => {
-    if (!isActive) {
-      const totalSeconds = minutes * 60 + seconds;
-      const totalMs = totalSeconds * 1000;
-      expirationTimeRef.current = Date.now() + totalMs;
-      setIsActive(true);
-
-      if (totalSeconds > 0) {
-        await Notifications.scheduleNotificationAsync({
-          content: {
-            title: "Time's Up!",
-            body: `Your ${
-              isBreak ? "Break" : "Focus"
-            } session is finished. Tap to return.`,
-            data: { type: "pomodoro_end" },
-            sound: true,
-          },
-          trigger: {
-            type: Notifications.SchedulableTriggerInputTypes.TIME_INTERVAL,
-            seconds: totalSeconds,
-          },
-        });
-      }
-    } else {
-      setIsActive(false);
-      expirationTimeRef.current = null;
-      await Notifications.cancelAllScheduledNotificationsAsync();
-    }
-  };
-
-  const handleSwitchMode = async (toBreak: boolean) => {
-    setIsActive(false);
-    expirationTimeRef.current = null;
-    await Notifications.cancelAllScheduledNotificationsAsync();
-    setIsBreak(toBreak);
-    setMinutes(toBreak ? 5 : 25);
-    setSeconds(0);
-  };
-
-  const triggerCompletionAlert = () => {
-    Vibration.vibrate([500, 500, 500]);
-    Alert.alert("Time's Up!", `Ready for your ${isBreak ? "Work" : "Break"}?`, [
-      { text: "OK", onPress: () => handleSwitchMode(!isBreak) },
-    ]);
-  };
-
-  const { user } = useUser();
+  // 3. DATABASE LOGIC (Uses the 'supabase' instance from the top)
 
   async function loadTodos() {
-    if (!user) return;
+    if (!user || !supabase) return;
     setLoading(true);
     const { data, error } = await supabase
       .from("todo_list")
       .select("*")
       .eq("user_id", user.id);
+
     if (error) {
       console.error("Error loading todos:", error.message);
     } else {
@@ -242,92 +178,162 @@ export default function TodoScreen() {
 
   async function handleAddTodo() {
     const trimmedTitle = title.trim();
-    if (!trimmedTitle || !user) return;
+    if (!trimmedTitle || !user || !supabase) return;
+
     setAdding(true);
     const deadlineValue = selectedDate ? selectedDate.toISOString() : null;
+
     const { data, error } = await supabase
       .from("todo_list")
-      .insert([
-        {
+      .insert([{
           title: trimmedTitle,
           user_id: user.id,
           is_completed: false,
           deadline_at: deadlineValue,
-        },
-      ])
+      }])
       .select()
       .single();
+
     if (error) {
       console.error("Error adding todo:", error.message);
     } else if (data) {
       setTodos((prev) => sortTodosByDeadline([data, ...prev]));
       setTitle("");
       setSelectedDate(null);
-      const granted = await requestNotificationPermission();
-      if (granted) {
-        await scheduleDeadlineReminder(
-          data.title ?? trimmedTitle,
-          data.deadline_at ?? deadlineValue
-        );
+      setShowAddForm(false);
+
+      const { status } = await Notifications.getPermissionsAsync();
+      if (status === "granted") {
+        await scheduleDeadlineReminder(data.title, data.deadline_at);
       }
     }
     setAdding(false);
   }
 
   async function toggleTodo(item: Todo) {
+    if (!supabase) return;
     const { data, error } = await supabase
       .from("todo_list")
       .update({ is_completed: !item.is_completed })
       .eq("id", item.id)
       .select()
       .single();
+
     if (data) {
-      setTodos((prev) =>
-        prev.map((todo) => (todo.id === item.id ? data : todo))
-      );
+      setTodos((prev) => prev.map((t) => (t.id === item.id ? data : t)));
     }
   }
 
   async function deleteTodo(id: string) {
+    if (!supabase) return;
     const { error } = await supabase.from("todo_list").delete().eq("id", id);
-    if (!error) setTodos((prev) => prev.filter((todo) => todo.id !== id));
+    if (!error) {
+      setTodos((prev) => prev.filter((todo) => todo.id !== id));
+    }
   }
 
   async function updateTodo(id: string) {
     const trimmedTitle = editingTitle.trim();
-    if (!trimmedTitle) return;
+    if (!trimmedTitle || !supabase) return;
+
     const { data, error } = await supabase
       .from("todo_list")
       .update({ title: trimmedTitle })
       .eq("id", id)
       .select()
       .single();
-    if (data)
+
+    if (data) {
       setTodos((prev) => prev.map((todo) => (todo.id === id ? data : todo)));
-    setEditingId(null);
-    setEditingTitle("");
-  }
-
-  async function requestNotificationPermission() {
-    const { status: existingStatus } =
-      await Notifications.getPermissionsAsync();
-    let finalStatus = existingStatus;
-    if (existingStatus !== "granted") {
-      const { status } = await Notifications.requestPermissionsAsync();
-      finalStatus = status;
+      setEditingId(null);
+      setEditingTitle("");
     }
-    return finalStatus === "granted";
   }
 
+  // 4. EFFECTS
   useEffect(() => {
-    if (user) loadTodos();
-  }, [user]);
+    if (user && supabase && !isInitialLoad) {
+      loadTodos();
+      setIsInitialLoad(true);
+    }
+  }, [user, supabase, isInitialLoad]);
 
-  const filteredTodos = todos.filter((todo) => {
-    if (filter === "active") return !todo.is_completed;
-    if (filter === "completed") return todo.is_completed;
-    return true;
+useEffect(() => {
+  let interval: ReturnType<typeof setInterval>;
+  if (isActive) {
+  interval = setInterval(() => {
+  const now = Date.now();
+
+  if (expirationTimeRef.current && now >= expirationTimeRef.current) {
+  setMinutes(0);
+  setSeconds(0);
+  setIsActive(false);
+  expirationTimeRef.current = null;
+  triggerCompletionAlert();
+  } else if (expirationTimeRef.current) {
+  const diff = expirationTimeRef.current - now;
+  setMinutes(Math.floor(diff / 1000 / 60));
+  setSeconds(Math.floor((diff / 1000) % 60));
+}
+}, 1000);
+} return () => clearInterval(interval);
+}, [isActive]);
+
+  const handleToggle = async () => {
+   if (!isActive) {
+   const totalSeconds = minutes * 60 + seconds;
+   const totalMs = totalSeconds * 1000;
+   expirationTimeRef.current = Date.now() + totalMs;
+     setIsActive(true);
+   if (totalSeconds > 0) {
+     await Notifications.scheduleNotificationAsync({
+     content: {
+     title: "Time's Up!",
+     body: `Your ${
+     isBreak ? "Break" : "Focus"
+     } session is finished. Tap to return.`,
+     data: { type: "pomodoro_end" },
+     sound: true,
+     },
+  trigger: {
+  type: Notifications.SchedulableTriggerInputTypes.TIME_INTERVAL,
+  seconds: totalSeconds,
+  },
   });
+  }
+  } else {
+    setIsActive(false);
+    expirationTimeRef.current = null;
+    await Notifications.cancelAllScheduledNotificationsAsync();
+  }
+  };
+
+  const handleSwitchMode = async (toBreak: boolean) => {
+
+    setIsActive(false);
+    expirationTimeRef.current = null;
+    await Notifications.cancelAllScheduledNotificationsAsync();
+    setIsBreak(toBreak);
+    setMinutes(toBreak ? 5 : 25);
+    setSeconds(0);
+
+  };
+
+  const triggerCompletionAlert = () => {
+    Vibration.vibrate([500, 500, 500]);
+    Alert.alert("Time's Up!", `Ready for your ${isBreak ? "Work" : "Break"}?`, [
+    { text: "OK", onPress: () => handleSwitchMode(!isBreak) },
+  ]);
+  };
+
+  // 5. RENDER LOGIC
+  const filteredTodos = useMemo(() => {
+    return todos.filter((todo) => {
+      if (filter === "active") return !todo.is_completed;
+      if (filter === "completed") return todo.is_completed;
+      return true;
+    });
+  }, [todos, filter]);
 
   return (
     <View style={styles.container}>
