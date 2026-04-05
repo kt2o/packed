@@ -29,13 +29,13 @@ export default function SubmitScreen() {
   const [submitting, setSubmitting] = useState(false);
 
   useEffect(() => {
-      if (verified === "true") {
-    submitToSupabase();
-  } else {
-    setSubmitting(false)
-    //Alert.alert("Check-in Failed", "You are not close enough. Please select another location.");
-  }
-}, [verified]);
+    if (verified === "true") {
+      submitToSupabase();
+    } else {
+      setSubmitting(false)
+      //Alert.alert("Check-in Failed", "You are not close enough. Please select another location.");
+    }
+  }, [verified]);
 
   const locations = useMemo(() => {
     return spots.map((spot) => ({
@@ -58,42 +58,42 @@ export default function SubmitScreen() {
     setSubmitting(true);
 
     router.push({
-    pathname: "/spot/[id]",
-    params: { id: selectedSpot, returnTo: "submit" },  // ← pass returnTo so spot page knows where to go back
-  });
+      pathname: "/spot/[id]",
+      params: { id: selectedSpot, returnTo: "submit" },  // ← pass returnTo so spot page knows where to go back
+    });
 
   };
 
   const submitToSupabase = async () => {
-  const { data: row } = await supabase
-    .from("user_database")
-    .select("id")
-    .eq("user_email", user.primaryEmailAddress.emailAddress)
-    .single();
+    const { data: row } = await supabase
+      .from("user_database")
+      .select("id")
+      .eq("user_email", user.primaryEmailAddress.emailAddress)
+      .single();
 
-  const userId = user.id;
+    const userId = user.id;
 
-  const { error } = await supabase.from("study_spot_status").insert([
-    {
-      spot_id: selectedSpot,
-      status: selectedStatus,
-      user_id: userId,
-      floor_id: selectedFloor,
-    },
-  ]);
+    const { error } = await supabase.from("study_spot_status").insert([
+      {
+        spot_id: selectedSpot,
+        status: selectedStatus,
+        user_id: userId,
+        floor_id: selectedFloor,
+      },
+    ]);
 
-  setSubmitting(false);
+    setSubmitting(false);
 
-  if (error) {
+    if (error) {
       console.error("Insert error:", error);
       Alert.alert("Error", error.message);
       return;
     }
 
-  Alert.alert("Success", `Reported as ${selectedStatus}`, [
-    { text: "OK", onPress: () => router.back() },
-  ]);
-};
+    Alert.alert("Success", `Reported as ${selectedStatus}`, [
+      { text: "OK", onPress: () => router.back() },
+    ]);
+  };
 
   return (
     <ScrollView
@@ -108,7 +108,7 @@ export default function SubmitScreen() {
         onChange={setSelectedSpot}
         placeholder="Where are you?"
       ></LocationDropDown>
-      
+
       {floors.length > 0 && (
         <View style={styles.inputContainer}>
           <Text style={styles.label}>Which floor are you on?</Text>

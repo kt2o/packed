@@ -1,6 +1,5 @@
-import { supabase } from "../../../lib/supabase-client";
 import { useUser } from "@clerk/clerk-expo";
-import { useEffect, useState, useRef } from "react";
+import { useEffect, useMemo, useState } from "react";
 import {
   View,
   Text,
@@ -8,326 +7,192 @@ import {
   StyleSheet,
   TextInput,
   TouchableOpacity,
-  AppState,
-  AppStateStatus,
-  Vibration,
-  Alert,
+  Platform,
 } from "react-native";
 import DateTimePicker from "@react-native-community/datetimepicker";
-import * as Notifications from "expo-notifications";
 import PomodoroTimer from "../../../components/PomodoroTimer";
 
-type Todo = {
-  id: string;
-  user_id: string;
-  title: string;
-  is_completed: boolean;
-  created_at: string;
-  deadline_at: string | null;
-};
+import TodoItem from "../../../features/todo/TodoItem";
+import { usePomodoro } from "../../../features/todo/usePomodoro";
+import {
+  configureNotificationHandler,
+  requestNotificationPermission,
+  scheduleDeadlineReminders,
+  sortTodosByDeadline,
+} from "../../../features/todo/todo.utils";
+import {
+  createTodo,
+  fetchTodosByUser,
+  removeTodo,
+  updateTodoCompletion,
+  updateTodoTitle,
+} from "../../../features/todo/todo.service";
+import { Todo, TodoFilter } from "../../../features/todo/todo.types";
 
-Notifications.setNotificationHandler({
-  handleNotification: async () => ({
-    shouldShowBanner: true,
-    shouldShowList: true,
-    shouldPlaySound: false,
-    shouldSetBadge: false,
-  }),
-});
-
-async function scheduleDeadlineReminder(
-  title: string,
-  deadlineAt: string | null
-) {
-  if (!deadlineAt) return;
-
-  const deadlineDate = new Date(deadlineAt);
-  const now = new Date();
-
-  const reminderOffsets = [
-    { label: "1 week", ms: 7 * 24 * 60 * 60 * 1000 },
-    { label: "3 days", ms: 3 * 24 * 60 * 60 * 1000 },
-    { label: "1 day", ms: 1 * 24 * 60 * 60 * 1000 },
-  ];
-
-  for (const reminder of reminderOffsets) {
-    const triggerDate = new Date(deadlineDate.getTime() - reminder.ms);
-
-    if (triggerDate > now) {
-      await Notifications.scheduleNotificationAsync({
-        content: {
-          title: "Task deadline coming up",
-          body: `"${title}" is due in ${reminder.label}.`,
-          data: { deadlineAt, reminder: reminder.label },
-        },
-        trigger: {
-          type: Notifications.SchedulableTriggerInputTypes.DATE,
-          date: triggerDate,
-        },
-      });
-    }
-  }
-}
-
-function getDeadlineStatus(deadlineAt: string | null) {
-  if (!deadlineAt) return "none";
-
-  const now = new Date();
-  const deadline = new Date(deadlineAt);
-
-  const diffMs = deadline.getTime() - now.getTime();
-  const diffDays = diffMs / (1000 * 60 * 60 * 24);
-
-  if (diffDays < 0) return "overdue";
-  if (diffDays <= 1) return "oneDay";
-  if (diffDays <= 3) return "threeDays";
-  if (diffDays <= 7) return "oneWeek";
-  return "normal";
-}
-
-function getDeadlineStyle(status: string) {
-  switch (status) {
-    case "completed":
-      return { backgroundColor: "#f5f5f5", borderColor: "#d9d9d9" };
-    case "overdue":
-      return { backgroundColor: "#ffe5e5", borderColor: "#ff4d4f" };
-    case "oneDay":
-      return { backgroundColor: "#fff1e6", borderColor: "#ff7a45" };
-    case "threeDays":
-      return { backgroundColor: "#fff7e6", borderColor: "#fa8c16" };
-    case "oneWeek":
-      return { backgroundColor: "#fffbe6", borderColor: "#fadb14" };
-    default:
-      return { backgroundColor: "#ffffff", borderColor: "#eeeeee" };
-  }
-}
-
-function getDeadlineLabel(status: string) {
-  switch (status) {
-    case "overdue":
-      return "Overdue";
-    case "oneDay":
-      return "Due within 1 day";
-    case "threeDays":
-      return "Due within 3 days";
-    case "oneWeek":
-      return "Due within 1 week";
-    default:
-      return "";
-  }
-}
-
-function sortTodosByDeadline(items: Todo[]) {
-  return [...items].sort((a, b) => {
-    if (a.deadline_at && b.deadline_at) {
-      return (
-        new Date(a.deadline_at).getTime() - new Date(b.deadline_at).getTime()
-      );
-    }
-
-    if (a.deadline_at && !b.deadline_at) return -1;
-    if (!a.deadline_at && b.deadline_at) return 1;
-
-    return new Date(b.created_at).getTime() - new Date(a.created_at).getTime();
-  });
-}
+configureNotificationHandler();
 
 export default function TodoScreen() {
-  const [todos, setTodos] = useState<Todo[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [title, setTitle] = useState("");
-  const [adding, setAdding] = useState(false);
-  const [filter, setFilter] = useState<"all" | "active" | "completed">("all");
-  const [editingId, setEditingId] = useState<string | null>(null);
-
-  const [editingTitle, setEditingTitle] = useState("");
-  const [showPicker, setShowPicker] = useState(false);
-  const [selectedDate, setSelectedDate] = useState<Date | null>(null);
-  const [activeTab, setActiveTab] = useState<"list" | "pomodoro">("list");
-
-  const [showAddForm, setShowAddForm] = useState(false);
-
-  // persistent timer state
-  const [minutes, setMinutes] = useState(25);
-  const [seconds, setSeconds] = useState(0);
-  const [isActive, setIsActive] = useState(false);
-  const [isBreak, setIsBreak] = useState(false);
-
-  const expirationTimeRef = useRef<number | null>(null);
-
-  // handle backgrounding
-  useEffect(() => {
-    let interval: ReturnType<typeof setInterval>;
-    if (isActive) {
-      interval = setInterval(() => {
-        const now = Date.now();
-        if (expirationTimeRef.current && now >= expirationTimeRef.current) {
-          setMinutes(0);
-          setSeconds(0);
-          setIsActive(false);
-          expirationTimeRef.current = null;
-          triggerCompletionAlert();
-        } else if (expirationTimeRef.current) {
-          const diff = expirationTimeRef.current - now;
-          setMinutes(Math.floor(diff / 1000 / 60));
-          setSeconds(Math.floor((diff / 1000) % 60));
-        }
-      }, 1000);
-    }
-    return () => clearInterval(interval);
-  }, [isActive]);
-
-  const handleToggle = async () => {
-    if (!isActive) {
-      const totalSeconds = minutes * 60 + seconds;
-      const totalMs = totalSeconds * 1000;
-      expirationTimeRef.current = Date.now() + totalMs;
-      setIsActive(true);
-
-      if (totalSeconds > 0) {
-        await Notifications.scheduleNotificationAsync({
-          content: {
-            title: "Time's Up!",
-            body: `Your ${
-              isBreak ? "Break" : "Focus"
-            } session is finished. Tap to return.`,
-            data: { type: "pomodoro_end" },
-            sound: true,
-          },
-          trigger: {
-            type: Notifications.SchedulableTriggerInputTypes.TIME_INTERVAL,
-            seconds: totalSeconds,
-          },
-        });
-      }
-    } else {
-      setIsActive(false);
-      expirationTimeRef.current = null;
-      await Notifications.cancelAllScheduledNotificationsAsync();
-    }
-  };
-
-  const handleSwitchMode = async (toBreak: boolean) => {
-    setIsActive(false);
-    expirationTimeRef.current = null;
-    await Notifications.cancelAllScheduledNotificationsAsync();
-    setIsBreak(toBreak);
-    setMinutes(toBreak ? 5 : 25);
-    setSeconds(0);
-  };
-
-  const triggerCompletionAlert = () => {
-    Vibration.vibrate([500, 500, 500]);
-    Alert.alert("Time's Up!", `Ready for your ${isBreak ? "Work" : "Break"}?`, [
-      { text: "OK", onPress: () => handleSwitchMode(!isBreak) },
-    ]);
-  };
-
   const { user } = useUser();
 
-  async function loadTodos() {
-    if (!user) return;
-    setLoading(true);
-    const { data, error } = await supabase
-      .from("todo_list")
-      .select("*")
-      .eq("user_id", user.id);
-    if (error) {
-      console.error("Error loading todos:", error.message);
-    } else {
-      setTodos(sortTodosByDeadline(data || []));
-    }
-    setLoading(false);
-  }
+  const [todos, setTodos] = useState<Todo[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [adding, setAdding] = useState(false);
 
-  async function handleAddTodo() {
+  const [title, setTitle] = useState("");
+  const [editingId, setEditingId] = useState<string | null>(null);
+  const [editingTitle, setEditingTitle] = useState("");
+
+  const [filter, setFilter] = useState<TodoFilter>("all");
+  const [activeTab, setActiveTab] = useState<"list" | "pomodoro">("list");
+  const [showAddForm, setShowAddForm] = useState(false);
+
+  const [showPicker, setShowPicker] = useState(false);
+  const [selectedDate, setSelectedDate] = useState<Date | null>(null);
+
+  const {
+    minutes,
+    seconds,
+    isActive,
+    isBreak,
+    handleToggle,
+    handleSwitchMode,
+    resetTimerState,
+  } = usePomodoro();
+
+  const loadTodos = async (): Promise<void> => {
+    if (!user) return;
+
+    try {
+      setLoading(true);
+      const { data, error } = await fetchTodosByUser(user.id);
+
+      if (error) {
+        console.error("Error loading todos:", error.message);
+        return;
+      }
+
+      setTodos(sortTodosByDeadline(data || []));
+    } catch (err) {
+      console.error("Unexpected error loading todos:", err);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleAddTodo = async (): Promise<void> => {
     const trimmedTitle = title.trim();
     if (!trimmedTitle || !user) return;
-    setAdding(true);
-    const deadlineValue = selectedDate ? selectedDate.toISOString() : null;
-    const { data, error } = await supabase
-      .from("todo_list")
-      .insert([
-        {
-          title: trimmedTitle,
-          user_id: user.id,
-          is_completed: false,
-          deadline_at: deadlineValue,
-        },
-      ])
-      .select()
-      .single();
-    if (error) {
-      console.error("Error adding todo:", error.message);
-    } else if (data) {
+
+    try {
+      setAdding(true);
+      const deadlineValue = selectedDate ? selectedDate.toISOString() : null;
+
+      const { data, error } = await createTodo({
+        title: trimmedTitle,
+        user_id: user.id,
+        is_completed: false,
+        deadline_at: deadlineValue,
+      });
+
+      if (error) {
+        console.error("Error adding todo:", error.message);
+        return;
+      }
+
+      if (!data) return;
+
       setTodos((prev) => sortTodosByDeadline([data, ...prev]));
       setTitle("");
       setSelectedDate(null);
+      setShowPicker(false);
+
       const granted = await requestNotificationPermission();
       if (granted) {
-        await scheduleDeadlineReminder(
+        await scheduleDeadlineReminders(
           data.title ?? trimmedTitle,
           data.deadline_at ?? deadlineValue
         );
       }
+    } catch (err) {
+      console.error("Unexpected error adding todo:", err);
+    } finally {
+      setAdding(false);
     }
-    setAdding(false);
-  }
+  };
 
-  async function toggleTodo(item: Todo) {
-    const { data, error } = await supabase
-      .from("todo_list")
-      .update({ is_completed: !item.is_completed })
-      .eq("id", item.id)
-      .select()
-      .single();
-    if (data) {
-      setTodos((prev) =>
-        prev.map((todo) => (todo.id === item.id ? data : todo))
+  const handleToggleTodo = async (item: Todo): Promise<void> => {
+    try {
+      const { data, error } = await updateTodoCompletion(
+        item.id,
+        !item.is_completed
       );
+
+      if (error) {
+        console.error("Error toggling todo:", error.message);
+        return;
+      }
+
+      if (data) {
+        setTodos((prev) =>
+          prev.map((todo) => (todo.id === item.id ? data : todo))
+        );
+      }
+    } catch (err) {
+      console.error("Unexpected error toggling todo:", err);
     }
-  }
+  };
 
-  async function deleteTodo(id: string) {
-    const { error } = await supabase.from("todo_list").delete().eq("id", id);
-    if (!error) setTodos((prev) => prev.filter((todo) => todo.id !== id));
-  }
+  const handleDeleteTodo = async (id: string): Promise<void> => {
+    try {
+      const { error } = await removeTodo(id);
 
-  async function updateTodo(id: string) {
+      if (error) {
+        console.error("Error deleting todo:", error.message);
+        return;
+      }
+
+      setTodos((prev) => prev.filter((todo) => todo.id !== id));
+    } catch (err) {
+      console.error("Unexpected error deleting todo:", err);
+    }
+  };
+
+  const handleUpdateTodo = async (id: string): Promise<void> => {
     const trimmedTitle = editingTitle.trim();
     if (!trimmedTitle) return;
-    const { data, error } = await supabase
-      .from("todo_list")
-      .update({ title: trimmedTitle })
-      .eq("id", id)
-      .select()
-      .single();
-    if (data)
-      setTodos((prev) => prev.map((todo) => (todo.id === id ? data : todo)));
-    setEditingId(null);
-    setEditingTitle("");
-  }
 
-  async function requestNotificationPermission() {
-    const { status: existingStatus } =
-      await Notifications.getPermissionsAsync();
-    let finalStatus = existingStatus;
-    if (existingStatus !== "granted") {
-      const { status } = await Notifications.requestPermissionsAsync();
-      finalStatus = status;
+    try {
+      const { data, error } = await updateTodoTitle(id, trimmedTitle);
+
+      if (error) {
+        console.error("Error updating todo:", error.message);
+        return;
+      }
+
+      if (data) {
+        setTodos((prev) =>
+          prev.map((todo) => (todo.id === id ? data : todo))
+        );
+      }
+
+      setEditingId(null);
+      setEditingTitle("");
+    } catch (err) {
+      console.error("Unexpected error updating todo:", err);
     }
-    return finalStatus === "granted";
-  }
+  };
 
   useEffect(() => {
-    if (user) loadTodos();
+    void loadTodos();
   }, [user]);
 
-  const filteredTodos = todos.filter((todo) => {
-    if (filter === "active") return !todo.is_completed;
-    if (filter === "completed") return todo.is_completed;
-    return true;
-  });
+  const filteredTodos = useMemo(() => {
+    return todos.filter((todo) => {
+      if (filter === "active") return !todo.is_completed;
+      if (filter === "completed") return todo.is_completed;
+      return true;
+    });
+  }, [todos, filter]);
 
   return (
     <View style={styles.container}>
@@ -348,6 +213,7 @@ export default function TodoScreen() {
             Tasks
           </Text>
         </TouchableOpacity>
+
         <TouchableOpacity
           onPress={() => setActiveTab("pomodoro")}
           style={[
@@ -389,6 +255,7 @@ export default function TodoScreen() {
                 placeholder="Enter a task"
                 style={styles.input}
               />
+
               <TouchableOpacity
                 style={styles.input}
                 onPress={() => setShowPicker((prev) => !prev)}
@@ -411,22 +278,37 @@ export default function TodoScreen() {
                   <DateTimePicker
                     value={selectedDate || new Date()}
                     mode="date"
-                    display="inline"
-                    onChange={(event, date) => date && setSelectedDate(date)}
+                    display={Platform.OS === "ios" ? "inline" : "default"}
+                    onChange={(event, date) => {
+                      if (Platform.OS === "android") {
+                        setShowPicker(false);
+                        if (event.type === "set" && date) {
+                          setSelectedDate(date);
+                        }
+                        return;
+                      }
+
+                      if (date) {
+                        setSelectedDate(date);
+                      }
+                    }}
                     style={{ marginBottom: 10 }}
                   />
-                  <TouchableOpacity
-                    onPress={() => setShowPicker(false)}
-                    style={styles.doneButton}
-                  >
-                    <Text style={styles.doneButtonText}>Done</Text>
-                  </TouchableOpacity>
+
+                  {Platform.OS === "ios" && (
+                    <TouchableOpacity
+                      onPress={() => setShowPicker(false)}
+                      style={styles.doneButton}
+                    >
+                      <Text style={styles.doneButtonText}>Done</Text>
+                    </TouchableOpacity>
+                  )}
                 </>
               )}
 
               <TouchableOpacity
                 style={styles.addButton}
-                onPress={handleAddTodo}
+                onPress={() => void handleAddTodo()}
                 disabled={adding}
               >
                 <Text style={styles.addButtonText}>
@@ -437,15 +319,15 @@ export default function TodoScreen() {
           )}
 
           <View style={styles.filterRow}>
-            {["all", "active", "completed"].map((f) => (
-              <TouchableOpacity key={f} onPress={() => setFilter(f as any)}>
+            {(["all", "active", "completed"] as TodoFilter[]).map((value) => (
+              <TouchableOpacity key={value} onPress={() => setFilter(value)}>
                 <Text
                   style={[
                     styles.filterText,
-                    filter === f && styles.activeFilter,
+                    filter === value && styles.activeFilter,
                   ]}
                 >
-                  {f.charAt(0).toUpperCase() + f.slice(1)}
+                  {value.charAt(0).toUpperCase() + value.slice(1)}
                 </Text>
               </TouchableOpacity>
             ))}
@@ -457,75 +339,18 @@ export default function TodoScreen() {
             <FlatList
               data={filteredTodos}
               keyExtractor={(item) => item.id}
-              renderItem={({ item }) => {
-                const status = item.is_completed
-                  ? "completed"
-                  : getDeadlineStatus(item.deadline_at);
-                return (
-                  <View style={[styles.todoItem, getDeadlineStyle(status)]}>
-                    {editingId === item.id ? (
-                      <View style={styles.editRow}>
-                        <TextInput
-                          value={editingTitle}
-                          onChangeText={setEditingTitle}
-                          style={styles.editInput}
-                        />
-                        <TouchableOpacity onPress={() => updateTodo(item.id)}>
-                          <Text style={styles.saveText}>Save</Text>
-                        </TouchableOpacity>
-                        <TouchableOpacity
-                          onPress={() => {
-                            setEditingId(null);
-                            setEditingTitle("");
-                          }}
-                        >
-                          <Text style={styles.cancelText}>Cancel</Text>
-                        </TouchableOpacity>
-                      </View>
-                    ) : (
-                      <>
-                        <TouchableOpacity
-                          onPress={() => toggleTodo(item)}
-                          style={styles.todoContent}
-                        >
-                          <Text
-                            style={[
-                              styles.todoText,
-                              item.is_completed && styles.completed,
-                            ]}
-                          >
-                            {item.is_completed ? "✅" : "⬜"} {item.title}
-                          </Text>
-                          {item.deadline_at && (
-                            <Text style={styles.deadlineText}>
-                              Due:{" "}
-                              {new Date(item.deadline_at).toLocaleDateString()}
-                            </Text>
-                          )}
-                          {status !== "none" && getDeadlineLabel(status) && (
-                            <Text style={styles.deadlineLabel}>
-                              {getDeadlineLabel(status)}
-                            </Text>
-                          )}
-                        </TouchableOpacity>
-                        <View style={styles.actionsRow}>
-                          <TouchableOpacity
-                            onPress={() => {
-                              setEditingId(item.id);
-                              setEditingTitle(item.title);
-                            }}
-                          >
-                            <Text style={styles.editText}>Edit</Text>
-                          </TouchableOpacity>
-                          <TouchableOpacity onPress={() => deleteTodo(item.id)}>
-                            <Text style={styles.deleteText}>Delete</Text>
-                          </TouchableOpacity>
-                        </View>
-                      </>
-                    )}
-                  </View>
-                );
-              }}
+              renderItem={({ item }) => (
+                <TodoItem
+                  item={item}
+                  editingId={editingId}
+                  editingTitle={editingTitle}
+                  setEditingTitle={setEditingTitle}
+                  setEditingId={setEditingId}
+                  onToggle={(todo) => void handleToggleTodo(todo)}
+                  onDelete={(id) => void handleDeleteTodo(id)}
+                  onUpdate={(id) => void handleUpdateTodo(id)}
+                />
+              )}
               ListEmptyComponent={<Text>No To-Do's yet.</Text>}
             />
           )}
@@ -536,14 +361,9 @@ export default function TodoScreen() {
           seconds={seconds}
           isActive={isActive}
           isBreak={isBreak}
-          onToggle={handleToggle}
-          onReset={() => {
-            setIsActive(false);
-            expirationTimeRef.current = null;
-            setMinutes(isBreak ? 5 : 25);
-            setSeconds(0);
-          }}
-          onSwitchMode={handleSwitchMode}
+          onToggle={() => void handleToggle()}
+          onReset={() => void resetTimerState()}
+          onSwitchMode={(toBreak: boolean) => void handleSwitchMode(toBreak)}
         />
       )}
     </View>
@@ -578,21 +398,6 @@ const styles = StyleSheet.create({
     alignItems: "center",
   },
   addButtonText: { color: "#fff", fontWeight: "600" },
-  todoItem: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
-    paddingVertical: 12,
-    paddingHorizontal: 12,
-    borderBottomWidth: 1,
-    borderWidth: 1,
-    borderRadius: 10,
-    marginBottom: 10,
-  },
-  todoText: { fontSize: 16 },
-  completed: { textDecorationLine: "line-through", color: "gray" },
-  todoContent: { flex: 1 },
-  deleteText: { color: "red", fontWeight: "600", marginLeft: 12 },
   filterRow: {
     flexDirection: "row",
     justifyContent: "space-between",
@@ -601,27 +406,6 @@ const styles = StyleSheet.create({
   },
   filterText: { fontSize: 16, color: "#444" },
   activeFilter: { color: "#6320c7", fontWeight: "700" },
-  actionsRow: { flexDirection: "row", alignItems: "center", gap: 12 },
-  editText: { color: "#6320c7", fontWeight: "600", marginRight: 8 },
-  editRow: { flex: 1, flexDirection: "row", alignItems: "center", gap: 8 },
-  editInput: {
-    flex: 1,
-    borderWidth: 1,
-    borderColor: "#ccc",
-    borderRadius: 8,
-    paddingHorizontal: 10,
-    height: 40,
-    backgroundColor: "#fff",
-  },
-  saveText: { color: "#6320c7", fontWeight: "700" },
-  cancelText: { color: "gray", fontWeight: "600" },
-  deadlineText: { fontSize: 12, color: "#555", marginTop: 4 },
-  deadlineLabel: {
-    fontSize: 11,
-    fontWeight: "600",
-    marginTop: 2,
-    color: "#444",
-  },
   inputLikeText: { fontSize: 16, lineHeight: 20, color: "#000" },
   placeholderText: { color: "#999" },
   tabSwitcher: {

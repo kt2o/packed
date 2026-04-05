@@ -1,8 +1,8 @@
+import React from "react";
 import { render, fireEvent } from "@testing-library/react-native";
 import PomodoroTimer from "../src/components/PomodoroTimer";
 
 describe("PomodoroTimer Component", () => {
-  // fake props
   const defaultProps = {
     minutes: 25,
     seconds: 0,
@@ -13,10 +13,13 @@ describe("PomodoroTimer Component", () => {
     onSwitchMode: jest.fn(),
   };
 
+  beforeEach(() => {
+    jest.clearAllMocks();
+  });
+
   it("renders the initial focus time correctly", () => {
     const { getByText } = render(<PomodoroTimer {...defaultProps} />);
 
-    // check if 25:00 is visible
     expect(getByText("25:00")).toBeTruthy();
     expect(getByText("START")).toBeTruthy();
   });
@@ -24,19 +27,15 @@ describe("PomodoroTimer Component", () => {
   it("calls onToggle when the Start button is pressed", () => {
     const { getByText } = render(<PomodoroTimer {...defaultProps} />);
 
-    // simulate clicking START
-    const startButton = getByText("START");
-    fireEvent.press(startButton);
+    fireEvent.press(getByText("START"));
 
     expect(defaultProps.onToggle).toHaveBeenCalledTimes(1);
   });
 
-  it('calls onSwitchMode with "true" when Break tab is pressed', () => {
+  it('calls onSwitchMode with true when Break tab is pressed', () => {
     const { getByText } = render(<PomodoroTimer {...defaultProps} />);
 
-    // simulate switching to Break mode
-    const breakButton = getByText("Break");
-    fireEvent.press(breakButton);
+    fireEvent.press(getByText("Break"));
 
     expect(defaultProps.onSwitchMode).toHaveBeenCalledWith(true);
   });
