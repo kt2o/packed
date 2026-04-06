@@ -1,31 +1,37 @@
 import { useLocalSearchParams } from "expo-router";
 import { View, Text, StyleSheet, Pressable } from "react-native";
-import { spots } from "../../config/studySpots";
+import { spots, floors } from "../../config/studySpots";
 import { getCurrentLocation } from "../../lib/location";
 import { useSupabase } from "src/lib/supabase-client";
 import { getDistanceMeters } from "../../lib/distance";
 import * as Location from "expo-location";
 import { useRouter } from "expo-router";
+import { useUser } from "@clerk/clerk-expo";
 
 export default function SpotScreen() {
   console.log("Spot Details screen mounted");
   const router = useRouter();
 
-  const { id } = useLocalSearchParams<{ id: string }>();
+  const { id, floorId, status } = useLocalSearchParams<{ id: string; floorId: string }>();
 
-  const DEV_MODE = true;
+  const DEV_MODE = false;
 
   const DEV_USER_ID = "6759bbaf-0fad-4c73-910f-1ee43570d3d1";
 
   const spot = spots.find((s) => s.id === id);
+  const floor = spot?.floors?.find((f) => f.id === floorId);
 
+  //hooks
   const supabase = useSupabase();
+  const { user } = useUser();
+
+  const userId = user?.id;
 
   async function handleCheckin() {
     //Check for Location
-    const { status } = await Location.getForegroundPermissionsAsync();
+    const { status: permissionStatus } = await Location.getForegroundPermissionsAsync();
 
-    if (status !== "granted") {
+    if (permissionStatus !== "granted") {
       //Ask for location again
       const { status: newStatus } =
         await Location.requestForegroundPermissionsAsync();
@@ -52,6 +58,7 @@ export default function SpotScreen() {
     //Get distance
     const distance = getDistanceMeters(userLat, userLng, spotLat, spotLng);
     console.log("Distance:", distance);
+    console.log("Clerk ID in app:", userId);
 
     if (isNaN(distance) || distance > spot.radius) {
       alert("You are not close enough to this study spot.");
@@ -59,27 +66,13 @@ export default function SpotScreen() {
       return;
     }
 
-
- //Pull user
- let userId;
- if (DEV_MODE) {
-   userId = DEV_USER_ID;
- } else{
-  const {
-   data: {user},
-  } = await supabase.auth.getUser();
- if (!user) {
-   alert("You must be logged in to check in.");
-   return;
-   }
-   userId = user.id;
-}
   //update supabase
   const { error } = await supabase
   .from("locations")
   .insert({
   user_id: userId,
   spot_id: spot.id,
+  floor_id: floor.id,
   lat: location.coords.latitude,
   lng: location.coords.longitude,
   updated_at: new Date().toISOString(),
@@ -93,8 +86,17 @@ export default function SpotScreen() {
   return;
   }
     //alert("Checked in successfully!");
-    router.replace({ pathname: "/submit", params: { verified: "true" } });
+    router.replace({
+    pathname: "/submit",
+      params: {
+          verified: "true",
+          id,
+          floorId,
+          status
+        }
+      });
   }
+
   return (
     <View style={styles.screen}>
       <View style={styles.card}>

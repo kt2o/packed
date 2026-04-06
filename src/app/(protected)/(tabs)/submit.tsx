@@ -23,7 +23,12 @@ export default function SubmitScreen() {
   const supabase = useSupabase();
 
 
-  const { verified } = useLocalSearchParams<{ verified: string }>();
+  const { verified, id, floorId, status } = useLocalSearchParams<{
+    verified: string;
+    id?: string;
+    floorId?: string;
+    status?: string;
+  }>();
 
   const [selectedSpot, setSelectedSpot] = useState<string>("");
   const [selectedFloor, setSelectedFloor] = useState<string>("");
@@ -32,10 +37,15 @@ export default function SubmitScreen() {
 
   useEffect(() => {
     if (verified === "true") {
-      submitToSupabase();
-    } else {
-      setSubmitting(false)
-      //Alert.alert("Check-in Failed", "You are not close enough. Please select another location.");
+      // 1. Sync the UI state (for the form display)
+      console.log("URL Params received:", { id, floorId, status });
+      if (id) setSelectedSpot(String(id));
+      if (floorId) setSelectedFloor(String(floorId));
+      if (status) setSelectedStatus(status as Status);
+
+      // 2. Pass the params DIRECTLY to the function
+      // instead of waiting for state to update
+      submitToSupabase(id, floorId, status as Status);
     }
   }, [verified]);
 
@@ -61,26 +71,29 @@ export default function SubmitScreen() {
 
     router.push({
       pathname: "/spot/[id]",
-      params: { id: selectedSpot, returnTo: "submit" },  // ← pass returnTo so spot page knows where to go back
+      params: {
+      id: selectedSpot,
+      floorId: selectedFloor,
+      status: selectedStatus,
+      returnTo: "submit" },
     });
 
   };
 
-  const submitToSupabase = async () => {
-  const { data: row } = await supabase
-    .from("user_database")
-    .select("id")
-    .eq("user_email", user.primaryEmailAddress.emailAddress)
-    .single();
-
+  const submitToSupabase = async (passedId?: string, passedFloorId?: string, passedStatus?: Status) => {
     const userId = user.id;
+
+    // Use the passed arguments OR the state as a fallback
+    const finalSpotId = passedId || selectedSpot;
+    const finalFloorId = passedFloorId || selectedFloor;
+    const finalStatus = passedStatus || selectedStatus;
 
     const { error } = await supabase.from("study_spot_status").insert([
       {
-        spot_id: selectedSpot,
-        status: selectedStatus,
+        spot_id: finalSpotId,
+        status: finalStatus,
         user_id: userId,
-        floor_id: selectedFloor,
+        floor_id: finalFloorId,
       },
     ]);
 
@@ -92,7 +105,7 @@ export default function SubmitScreen() {
       return;
     }
 
-    Alert.alert("Success", `Reported as ${selectedStatus}`, [
+    Alert.alert("Success", `Reported as ${finalStatus}`, [
       { text: "OK", onPress: () => router.back() },
     ]);
   };
