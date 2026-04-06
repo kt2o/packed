@@ -13,10 +13,11 @@ import { useUser } from "@clerk/clerk-expo";
 import { RewardSystem } from "src/components/RewardSystem";
 import { SignOutButton } from "src/components/sign-out-button";
 import { EditProfileModal } from "src/components/EditProfileModal";
-import { supabase } from "../../../lib/supabase-client";
+import { useSupabase } from "../../../lib/supabase-client";
 
 export default function ProfileScreen() {
   const { user, isLoaded } = useUser();
+  const supabase = useSupabase();
   const userId = user?.id;
   const [isEditModalVisible, setIsEditModalVisible] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
@@ -69,36 +70,36 @@ export default function ProfileScreen() {
     }
   }, [isLoaded, userId]);
 
-   const handleSaveProfile = async (
-       newUsername: string,
-       newImageUri: string | null
-       ) => {
-       if (!user) return;
+  const handleSaveProfile = async (
+    newUsername: string,
+    newImageUri: string | null
+  ) => {
+    if (!user) return;
 
-       try {
-         setIsSaving(true);
+    try {
+      setIsSaving(true);
 
-         if (newUsername !== user.username) {
-           await user.update({
-             username: newUsername
-           });
-         }
+      if (newUsername !== user.username) {
+        await user.update({
+          username: newUsername
+        });
+      }
 
-         if (newImageUri && newImageUri !== user.imageUrl) {
-           console.log("Image URI selected:", newImageUri);
-         }
+      if (newImageUri && newImageUri !== user.imageUrl) {
+        console.log("Image URI selected:", newImageUri);
+      }
 
-         Alert.alert("Success", "Profile updated successfully!");
-         handleCloseEditModal();
+      Alert.alert("Success", "Profile updated successfully!");
+      handleCloseEditModal();
 
-       } catch (error: any) {
-         console.error("Error updating profile:", error);
-         Alert.alert( "Update Failed", error?.errors ? error.errors[0].message : "An unexpected error occurred."
-         );
-         } finally {
-         setIsSaving(false);
-       }
-     };
+    } catch (error: any) {
+      console.error("Error updating profile:", error);
+      Alert.alert("Update Failed", error?.errors ? error.errors[0].message : "An unexpected error occurred."
+      );
+    } finally {
+      setIsSaving(false);
+    }
+  };
 
   const displayEmail = user?.primaryEmailAddress?.emailAddress || "";
   const emailPrefix = displayEmail ? displayEmail.split("@")[0] : "Nameless";
@@ -108,45 +109,45 @@ export default function ProfileScreen() {
     user?.imageUrl ||
     "https://avatar.iran.liara.run/username?username=[firstname+lastname]";
 
- return (
-   <SafeAreaView style={styles.safeArea}>
-     <ScrollView contentContainerStyle={styles.container}>
-      <View style={styles.headerSection}>
-        <Image source={{ uri: profileImage }} style={styles.avatar} />
-        <Text style={styles.username}>{displayName}</Text>
-        <Text style={styles.email}>{displayEmail}</Text>
+  return (
+    <SafeAreaView style={styles.safeArea}>
+      <ScrollView contentContainerStyle={styles.container}>
+        <View style={styles.headerSection}>
+          <Image source={{ uri: profileImage }} style={styles.avatar} />
+          <Text style={styles.username}>{displayName}</Text>
+          <Text style={styles.email}>{displayEmail}</Text>
 
-        <TouchableOpacity
-          style={styles.editProfileButton}
-          onPress={handleOpenEditModal}
+          <TouchableOpacity
+            style={styles.editProfileButton}
+            onPress={handleOpenEditModal}
           >
-           <Text style={styles.editProfileButtonText}>Edit Profile</Text>
+            <Text style={styles.editProfileButtonText}>Edit Profile</Text>
           </TouchableOpacity>
-         </View>
+        </View>
 
-         <RewardSystem
-         points={rewards.points}
-         nextRewardAt={rewards.nextRewardAt}
-         label={rewards.label}
-         loading={rewardsLoading}
-         error={rewardsError}
-         />
+        <RewardSystem
+          points={rewards.points}
+          nextRewardAt={rewards.nextRewardAt}
+          label={rewards.label}
+          loading={rewardsLoading}
+          error={rewardsError}
+        />
 
-         <View style={styles.footerSection}>
-           <SignOutButton />
-         </View>
+        <View style={styles.footerSection}>
+          <SignOutButton />
+        </View>
 
-         <EditProfileModal
-            isVisible={isEditModalVisible}
-            onClose={handleCloseEditModal}
-            onSave={handleSaveProfile}
-            initialUsername={displayName}
-            initialImageUri={profileImage}
-            isSaving={isSaving} />
-          </ScrollView>
-         </SafeAreaView>
-        );
-       }
+        <EditProfileModal
+          isVisible={isEditModalVisible}
+          onClose={handleCloseEditModal}
+          onSave={handleSaveProfile}
+          initialUsername={displayName}
+          initialImageUri={profileImage}
+          isSaving={isSaving} />
+      </ScrollView>
+    </SafeAreaView>
+  );
+}
 
 const styles = StyleSheet.create({
   safeArea: { flex: 1, backgroundColor: "#F5F7FB" },

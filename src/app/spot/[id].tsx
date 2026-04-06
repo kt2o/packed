@@ -2,7 +2,7 @@ import { useLocalSearchParams } from "expo-router";
 import { View, Text, StyleSheet, Pressable } from "react-native";
 import { spots } from "../../config/studySpots";
 import { getCurrentLocation } from "../../lib/location";
-import { useSupabase } from "../../lib/supabase-client";
+import { useSupabase } from "src/lib/supabase-client";
 import { getDistanceMeters } from "../../lib/distance";
 import * as Location from "expo-location";
 import { useRouter } from "expo-router";
@@ -10,13 +10,16 @@ import { useRouter } from "expo-router";
 export default function SpotScreen() {
   console.log("Spot Details screen mounted");
   const router = useRouter();
-  const { id } = useLocalSearchParams();
-  const supabase = useSupabase();
+
+  const { id } = useLocalSearchParams<{ id: string }>();
+
   const DEV_MODE = true;
 
   const DEV_USER_ID = "6759bbaf-0fad-4c73-910f-1ee43570d3d1";
 
   const spot = spots.find((s) => s.id === id);
+
+  const supabase = useSupabase();
 
   async function handleCheckin() {
     //Check for Location
@@ -52,6 +55,7 @@ export default function SpotScreen() {
 
     if (isNaN(distance) || distance > spot.radius) {
       alert("You are not close enough to this study spot.");
+      router.replace({ pathname: "/submit", params: { verified: "false" } });
       return;
     }
 
@@ -85,14 +89,11 @@ export default function SpotScreen() {
   if (error) {
   console.log("Insert error:", error);
   alert("Could not check in.");
+  router.replace({ pathname: "/submit", params: { verified: "false" } });
   return;
   }
-
-    alert("Checked in successfully!");
-    router.replace({
-      pathname: "/submit",
-      params: { location: spot.id },
-    });
+    //alert("Checked in successfully!");
+    router.replace({ pathname: "/submit", params: { verified: "true" } });
   }
   return (
     <View style={styles.screen}>
@@ -116,7 +117,7 @@ export default function SpotScreen() {
             pressed && { opacity: 0.7 },
           ]}
         >
-          <Text style={styles.secondaryButtonText}>← Back to Home</Text>
+          <Text style={styles.secondaryButtonText}>← Back to Submit</Text>
         </Pressable>
       </View>
     </View>

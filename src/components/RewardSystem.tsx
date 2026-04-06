@@ -19,16 +19,63 @@ export const RewardSystem = ({
 }: RewardSystemProps) => {
   const [showRewardsDetails, setShowRewardsDetails] = useState(false);
 
-  const safeGoal = nextRewardAt > 0 ? nextRewardAt : 1;
-  const progress = Math.min(points / safeGoal, 1);
-  const remaining = Math.max(nextRewardAt - points, 0);
+  const badgeCount = Math.floor(points / 100);
+  const currentBandStart = badgeCount * 100;
+  const nextMilestone = currentBandStart + 100;
+
+  const bandPoints = points - currentBandStart;
+  const progress = Math.min(Math.max(bandPoints / 100, 0), 1);
+  const remaining = Math.max(nextMilestone - points, 0);
 
   const rewardsMessage =
-    points >= nextRewardAt
-      ? "Claim your reward!"
-      : `${remaining} more until your next reward!`;
+    remaining === 0
+      ? "New badge earned!"
+      : `${remaining} more until your next badge!`;
 
-  const tickPercents = [0.1,0.2,0.3,0.4,0.5,0.6,0.7,0.8,0.9];
+  const earnedBadgeCount = Math.floor(points / 100);
+
+  const badgeData = [
+    {
+      name: "Bronze Badge",
+      icon: "medal-outline",
+      color: "#A97142",
+      backgroundColor: "#F4E7DC",
+    },
+    {
+      name: "Silver Badge",
+      icon: "ribbon-outline",
+      color: "#8E9AAF",
+      backgroundColor: "#ECEFF4",
+    },
+    {
+      name: "Gold Badge",
+      icon: "trophy-outline",
+      color: "#D4A017",
+      backgroundColor: "#FFF6DB",
+    },
+    {
+      name: "Platinum Badge",
+      icon: "diamond-outline",
+      color: "#5C6BC0",
+      backgroundColor: "#E8EAF6",
+    },
+    {
+      name: "Legend Badge",
+      icon: "star-outline",
+      color: "#6F2DBD",
+      backgroundColor: "#F3E8FF",
+    },
+  ];
+
+  const earnedBadges = badgeData.slice(
+    0,
+    Math.min(earnedBadgeCount, badgeData.length)
+  );
+
+  const nextBadge =
+    earnedBadgeCount < badgeData.length ? badgeData[earnedBadgeCount] : null;
+
+  const tickPercents = [0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9];
 
   return (
     <View style={styles.rewardsSection}>
@@ -43,7 +90,7 @@ export const RewardSystem = ({
           <View style={styles.rewardsSummaryRow}>
             <View>
               <Text style={styles.rewardsFraction}>
-                {points}/{nextRewardAt}
+                {points}/{nextMilestone}
               </Text>
               <Text style={styles.rewardsLabel}>{label}</Text>
             </View>
@@ -91,10 +138,54 @@ export const RewardSystem = ({
                 Current: {points} points
               </Text>
               <Text style={styles.rewardsDetailsText}>
-                Next reward at: {nextRewardAt} points
+                Next badge at: {nextMilestone} points
               </Text>
             </View>
           )}
+
+          <View style={styles.badgesSection}>
+            <Text style={styles.badgesTitle}>Badges</Text>
+
+            {earnedBadges.length === 0 ? (
+              <Text style={styles.noBadgesText}>
+                Earn 100 points to unlock your first badge.
+              </Text>
+            ) : (
+              <View style={styles.badgesRow}>
+                {earnedBadges.map((badge) => (
+                  <View
+                    key={badge.name}
+                    style={[styles.badgeCard, { backgroundColor: badge.backgroundColor }]}
+                  >
+                    <Ionicons
+                      name={badge.icon as any}
+                      size={24}
+                      color={badge.color}
+                    />
+                    <Text style={styles.badgeName}>{badge.name}</Text>
+                  </View>
+                ))}
+              </View>
+            )}
+            {nextBadge && (
+              <View style={styles.nextBadgeCard}>
+                <Text style={styles.nextBadgeTitle}>Next Badge</Text>
+
+                <View style={styles.nextBadgeRow}>
+                  <Ionicons
+                    name={nextBadge.icon as any}
+                    size={22}
+                    color={nextBadge.color}
+                  />
+                  <Text style={styles.nextBadgeName}>{nextBadge.name}</Text>
+                </View>
+
+                <Text style={styles.nextBadgeText}>
+                  {remaining} more points to unlock this badge.
+                </Text>
+              </View>
+            )}
+          </View>
         </>
       )}
     </View>
@@ -199,5 +290,68 @@ const styles = StyleSheet.create({
     height: 1,
     backgroundColor: "#E0D4F5",
     marginVertical: 10,
+  },
+  badgesSection: {
+    marginTop: 18,
+  },
+  badgesTitle: {
+    fontSize: 24,
+    fontWeight: "bold",
+    color: "#000",
+    marginBottom: 10,
+  },
+  noBadgesText: {
+    fontSize: 14,
+    color: "#555",
+  },
+  badgesRow: {
+    flexDirection: "row",
+    flexWrap: "wrap",
+    gap: 10,
+  },
+  badgeCard: {
+    width: 110,
+    paddingVertical: 12,
+    paddingHorizontal: 10,
+    borderRadius: 14,
+    backgroundColor: "#F6F2FB",
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  badgeName: {
+    marginTop: 8,
+    fontSize: 12,
+    fontWeight: "600",
+    color: "#000",
+    textAlign: "center",
+  },
+  nextBadgeCard: {
+    marginTop: 14,
+    padding: 14,
+    borderRadius: 14,
+    backgroundColor: "#FAFAFA",
+    borderWidth: 1,
+    borderColor: "#E8E8E8",
+  },
+  nextBadgeTitle: {
+    fontSize: 14,
+    fontWeight: "bold",
+    color: "#000",
+    marginBottom: 8,
+  },
+  nextBadgeRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    marginBottom: 6,
+  },
+  nextBadgeName: {
+    marginLeft: 8,
+    fontSize: 14,
+    fontWeight: "600",
+    color: "#000",
+  },
+  nextBadgeText: {
+    fontSize: 13,
+    color: "#555",
   },
 });
