@@ -6,6 +6,7 @@ import {
   Text,
   FlatList,
   StyleSheet,
+  Platform,
   TextInput,
   TouchableOpacity,
   AppState,
@@ -335,673 +336,346 @@ useEffect(() => {
     });
   }, [todos, filter]);
 
-  return (
-      <View style={styles.container}>
-        <View style={styles.tabSwitcher}>
-          <TouchableOpacity
-            onPress={() => setActiveTab("list")}
-            style={[
-              styles.tabItem,
-              activeTab === "list" && styles.activeTabBorder,
-            ]}
-          >
-            <Text
-              style={[
-                styles.tabLabel,
-                activeTab === "list" && styles.activeTabLabel,
-              ]}
-            >
-              Tasks
-            </Text>
-          </TouchableOpacity>
-          <TouchableOpacity
-            onPress={() => setActiveTab("pomodoro")}
-            style={[
-              styles.tabItem,
-              activeTab === "pomodoro" && styles.activeTabBorder,
-            ]}
-          >
-            <Text
-              style={[
-                styles.tabLabel,
-                activeTab === "pomodoro" && styles.activeTabLabel,
-              ]}
-            >
-              Pomodoro
-            </Text>
-          </TouchableOpacity>
-        </View>
-
-        {activeTab === "list" ? (
-          <>
-            <Text style={styles.header}>My To-Do List</Text>
-
+ return (
+        <View style={styles.container}>
+          <View style={styles.tabSwitcher}>
             <TouchableOpacity
-              style={styles.dropdownHeader}
-              onPress={() => setShowAddForm((prev) => !prev)}
-              activeOpacity={0.8}
+              onPress={() => setActiveTab("list")}
+              style={[
+                styles.tabItem,
+                activeTab === "list" && styles.activeTabBorder,
+              ]}
             >
-              <Text style={styles.dropdownHeaderText}>
-                {showAddForm ? "Hide Add Task" : "Add New Task"}
+              <Text
+                style={[
+                  styles.tabLabel,
+                  activeTab === "list" && styles.activeTabLabel,
+                ]}
+              >
+                Tasks
               </Text>
-              <Text style={styles.dropdownArrow}>{showAddForm ? "▲" : "▼"}</Text>
             </TouchableOpacity>
-
-            {showAddForm && (
-              <View style={styles.dropdownContent}>
-                <TextInput
-                  value={title}
-                  onChangeText={setTitle}
-                  placeholder="Enter a task"
-                  style={styles.input}
-                />
-                <TouchableOpacity
-                  style={styles.input}
-                  onPress={() => setShowPicker(true)}
-                  activeOpacity={0.8}
-                >
-                  <Text
-                    style={[
-                      styles.inputLikeText,
-                      !selectedDate && styles.placeholderText,
-                    ]}
-                  >
-                    {selectedDate
-                      ? selectedDate.toLocaleDateString()
-                      : "Select Deadline"}
-                  </Text>
-                </TouchableOpacity>
-
-                {showPicker && (
-                  <>
-                    <DateTimePicker
-                      value={selectedDate || new Date()}
-                      mode="date"
-                      display={Platform.OS === "ios" ? "inline" : "default"}
-                      onChange={(event, date) => {
-                        if (Platform.OS === "android") {
-                          setShowPicker(false);
-
-                          if (event.type === "set" && date) {
-                            setSelectedDate(date);
-                          }
-
-                          return;
-                        }
-
-                        if (date) {
-                          setSelectedDate(date);
-                        }
-                      }}
-                      style={{ marginBottom: 10 }}
-                    />
-
-                    {Platform.OS === "ios" && (
-                      <TouchableOpacity
-                        onPress={() => setShowPicker(false)}
-                        style={styles.doneButton}
-                      >
-                        <Text style={styles.doneButtonText}>Done</Text>
-                      </TouchableOpacity>
-                    )}
-                  </>
-                )}
-
-                <TouchableOpacity
-                  style={styles.addButton}
-                  onPress={handleAddTodo}
-                  disabled={adding}
-                >
-                  <Text style={styles.addButtonText}>
-                    {adding ? "Adding..." : "Add"}
-                  </Text>
-                </TouchableOpacity>
-              </View>
-            )}
-
-            <View style={styles.filterRow}>
-              {["all", "active", "completed"].map((f) => (
-                <TouchableOpacity key={f} onPress={() => setFilter(f as any)}>
-                  <Text
-                    style={[
-                      styles.filterText,
-                      filter === f && styles.activeFilter,
-                    ]}
-                  >
-                    {f.charAt(0).toUpperCase() + f.slice(1)}
-                  </Text>
-                </TouchableOpacity>
-              ))}
-            </View>
-
-            {loading ? (
-              <Text>Loading...</Text>
-            ) : (
-              <FlatList
-                data={filteredTodos}
-                keyExtractor={(item) => item.id}
-                renderItem={({ item }) => {
-                  const status = item.is_completed
-                    ? "completed"
-                    : getDeadlineStatus(item.deadline_at);
-                  return (
-                    <View style={[styles.todoItem, getDeadlineStyle(status)]}>
-                      {editingId === item.id ? (
-                        <View style={styles.editRow}>
-                          <TextInput
-                            value={editingTitle}
-                            onChangeText={setEditingTitle}
-                            style={styles.editInput}
-                          />
-                          <TouchableOpacity onPress={() => updateTodo(item.id)}>
-                            <Text style={styles.saveText}>Save</Text>
-                          </TouchableOpacity>
-                          <TouchableOpacity
-                            onPress={() => {
-                              setEditingId(null);
-                              setEditingTitle("");
-                            }}
-                          >
-                            <Text style={styles.cancelText}>Cancel</Text>
-                          </TouchableOpacity>
-                        </View>
-                      ) : (
-                        <>
-                          <TouchableOpacity
-                            onPress={() => toggleTodo(item)}
-                            style={styles.todoContent}
-                          >
-                            <Text
-                              style={[
-                                styles.todoText,
-                                item.is_completed && styles.completed,
-                              ]}
-                            >
-                              {item.is_completed ? "✅" : "⬜"} {item.title}
-                            </Text>
-                            {item.deadline_at && (
-                              <Text style={styles.deadlineText}>
-                                Due:{" "}
-                                {new Date(item.deadline_at).toLocaleDateString()}
-                              </Text>
-                            )}
-                            {status !== "none" && getDeadlineLabel(status) && (
-                              <Text style={styles.deadlineLabel}>
-                                {getDeadlineLabel(status)}
-                              </Text>
-                            )}
-                          </TouchableOpacity>
-                          <View style={styles.actionsRow}>
-                            <TouchableOpacity
-                              onPress={() => {
-                                setEditingId(item.id);
-                                setEditingTitle(item.title);
-                              }}
-                            >
-                              <Text style={styles.editText}>Edit</Text>
-                            </TouchableOpacity>
-                            <TouchableOpacity onPress={() => deleteTodo(item.id)}>
-                              <Text style={styles.deleteText}>Delete</Text>
-                            </TouchableOpacity>
-                          </View>
-                        </>
-                      )}
-                    </View>
-                  );
-                }}
-                ListEmptyComponent={<Text>No To-Do's yet.</Text>}
-              />
-            )}
-          </>
-        ) : (
-          <PomodoroTimer
-            minutes={minutes}
-            seconds={seconds}
-            isActive={isActive}
-            isBreak={isBreak}
-            onToggle={handleToggle}
-            onReset={() => {
-              setIsActive(false);
-              expirationTimeRef.current = null;
-              setMinutes(isBreak ? 5 : 25);
-              setSeconds(0);
-            }}
-            onSwitchMode={handleSwitchMode}
-          />
-        )}
-      </View>
-    );
-  }
-
-  const styles = StyleSheet.create({
-    container: { flex: 1, padding: 20, paddingTop: 60 },
-    header: {
-      fontSize: 24,
-      fontWeight: "bold",
-      marginBottom: 20,
-      textAlign: "center",
-    },
-    input: {
-      borderWidth: 1,
-      borderColor: "#ccc",
-      borderRadius: 8,
-      marginBottom: 8,
-      paddingHorizontal: 12,
-      height: 44,
-      justifyContent: "center",
-      backgroundColor: "#fff",
-      fontSize: 16,
-    },
-    addButton: {
-      backgroundColor: "#6320c7",
-      padding: 8,
-      marginTop: 16,
-      borderRadius: 8,
-      justifyContent: "center",
-      alignItems: "center",
-    },
-    addButtonText: { color: "#fff", fontWeight: "600" },
-    todoItem: {
-      flexDirection: "row",
-      alignItems: "center",
-      justifyContent: "space-between",
-      paddingVertical: 12,
-      paddingHorizontal: 12,
-      borderBottomWidth: 1,
-      borderWidth: 1,
-      borderRadius: 10,
-      marginBottom: 10,
-    },
-    todoText: { fontSize: 16 },
-    completed: { textDecorationLine: "line-through", color: "gray" },
-    todoContent: { flex: 1 },
-    deleteText: { color: "red", fontWeight: "600", marginLeft: 12 },
-    filterRow: {
-      flexDirection: "row",
-      justifyContent: "space-between",
-      marginBottom: 16,
-      paddingHorizontal: 4,
-    },
-    filterText: { fontSize: 16, color: "#444" },
-    activeFilter: { color: "#6320c7", fontWeight: "700" },
-    actionsRow: { flexDirection: "row", alignItems: "center", gap: 12 },
-    editText: { color: "#6320c7", fontWeight: "600", marginRight: 8 },
-    editRow: { flex: 1, flexDirection: "row", alignItems: "center", gap: 8 },
-    editInput: {
-      flex: 1,
-      borderWidth: 1,
-      borderColor: "#ccc",
-      borderRadius: 8,
-      paddingHorizontal: 10,
-      height: 40,
-      backgroundColor: "#fff",
-    },
-    saveText: { color: "#6320c7", fontWeight: "700" },
-    cancelText: { color: "gray", fontWeight: "600" },
-    deadlineText: { fontSize: 12, color: "#555", marginTop: 4 },
-    deadlineLabel: {
-      fontSize: 11,
-      fontWeight: "600",
-      marginTop: 2,
-      color: "#444",
-    },
-    inputLikeText: { fontSize: 16, lineHeight: 20, color: "#000" },
-    placeholderText: { color: "#999" },
-    tabSwitcher: {
-      flexDirection: "row",
-      marginBottom: 20,
-      borderBottomWidth: 1,
-      borderBottomColor: "#eee",
-    },
-    tabItem: { flex: 1, paddingVertical: 12, alignItems: "center" },
-    activeTabBorder: { borderBottomWidth: 3, borderBottomColor: "#6320c7" },
-    tabLabel: { fontSize: 16, color: "#999", fontWeight: "600" },
-    activeTabLabel: { color: "#6320c7" },
-    dropdownHeader: {
-      flexDirection: "row",
-      justifyContent: "space-between",
-      alignItems: "center",
-      backgroundColor: "#6320c7",
-      paddingHorizontal: 14,
-      paddingVertical: 12,
-      borderRadius: 10,
-      marginBottom: 16,
-    },
-    dropdownHeaderText: { color: "#fff", fontSize: 16, fontWeight: "600" },
-    dropdownArrow: { color: "#fff", fontSize: 16, fontWeight: "700" },
-    dropdownContent: {
-      backgroundColor: "#f8f6fc",
-      borderRadius: 10,
-      padding: 12,
-      marginBottom: 16,
-    },
-    doneButton: { alignSelf: "flex-end", marginBottom: 10 },
-    doneButtonText: { color: "#6320c7", fontWeight: "600" },
-  });
-=======
-    <View style={styles.container}>
-      <View style={styles.tabSwitcher}>
-        <TouchableOpacity
-          onPress={() => setActiveTab("list")}
-          style={[
-            styles.tabItem,
-            activeTab === "list" && styles.activeTabBorder,
-          ]}
-        >
-          <Text
-            style={[
-              styles.tabLabel,
-              activeTab === "list" && styles.activeTabLabel,
-            ]}
-          >
-            Tasks
-          </Text>
-        </TouchableOpacity>
-        <TouchableOpacity
-          onPress={() => setActiveTab("pomodoro")}
-          style={[
-            styles.tabItem,
-            activeTab === "pomodoro" && styles.activeTabBorder,
-          ]}
-        >
-          <Text
-            style={[
-              styles.tabLabel,
-              activeTab === "pomodoro" && styles.activeTabLabel,
-            ]}
-          >
-            Pomodoro
-          </Text>
-        </TouchableOpacity>
-      </View>
-
-      {activeTab === "list" ? (
-        <>
-          <Text style={styles.header}>My To-Do List</Text>
-
-          <TouchableOpacity
-            style={styles.dropdownHeader}
-            onPress={() => setShowAddForm((prev) => !prev)}
-            activeOpacity={0.8}
-          >
-            <Text style={styles.dropdownHeaderText}>
-              {showAddForm ? "Hide Add Task" : "Add New Task"}
-            </Text>
-            <Text style={styles.dropdownArrow}>{showAddForm ? "▲" : "▼"}</Text>
-          </TouchableOpacity>
-
-          {showAddForm && (
-            <View style={styles.dropdownContent}>
-              <TextInput
-                value={title}
-                onChangeText={setTitle}
-                placeholder="Enter a task"
-                style={styles.input}
-              />
-              <TouchableOpacity
-                style={styles.input}
-                onPress={() => setShowPicker((prev) => !prev)}
-                activeOpacity={0.8}
+            <TouchableOpacity
+              onPress={() => setActiveTab("pomodoro")}
+              style={[
+                styles.tabItem,
+                activeTab === "pomodoro" && styles.activeTabBorder,
+              ]}
+            >
+              <Text
+                style={[
+                  styles.tabLabel,
+                  activeTab === "pomodoro" && styles.activeTabLabel,
+                ]}
               >
-                <Text
-                  style={[
-                    styles.inputLikeText,
-                    !selectedDate && styles.placeholderText,
-                  ]}
-                >
-                  {selectedDate
-                    ? selectedDate.toLocaleDateString()
-                    : "Select Deadline"}
-                </Text>
-              </TouchableOpacity>
-
-              {showPicker && (
-                <>
-                  <DateTimePicker
-                    value={selectedDate || new Date()}
-                    mode="date"
-                    display="inline"
-                    onChange={(event, date) => date && setSelectedDate(date)}
-                    style={{ marginBottom: 10 }}
-                  />
-                  <TouchableOpacity
-                    onPress={() => setShowPicker(false)}
-                    style={styles.doneButton}
-                  >
-                    <Text style={styles.doneButtonText}>Done</Text>
-                  </TouchableOpacity>
-                </>
-              )}
-
-              <TouchableOpacity
-                style={styles.addButton}
-                onPress={handleAddTodo}
-                disabled={adding}
-              >
-                <Text style={styles.addButtonText}>
-                  {adding ? "Adding..." : "Add"}
-                </Text>
-              </TouchableOpacity>
-            </View>
-          )}
-
-          <View style={styles.filterRow}>
-            {["all", "active", "completed"].map((f) => (
-              <TouchableOpacity key={f} onPress={() => setFilter(f as any)}>
-                <Text
-                  style={[
-                    styles.filterText,
-                    filter === f && styles.activeFilter,
-                  ]}
-                >
-                  {f.charAt(0).toUpperCase() + f.slice(1)}
-                </Text>
-              </TouchableOpacity>
-            ))}
+                Pomodoro
+              </Text>
+            </TouchableOpacity>
           </View>
 
-          {loading ? (
-            <Text>Loading...</Text>
-          ) : (
-            <FlatList
-              data={filteredTodos}
-              keyExtractor={(item) => item.id}
-              renderItem={({ item }) => {
-                const status = item.is_completed
-                  ? "completed"
-                  : getDeadlineStatus(item.deadline_at);
-                return (
-                  <View style={[styles.todoItem, getDeadlineStyle(status)]}>
-                    {editingId === item.id ? (
-                      <View style={styles.editRow}>
-                        <TextInput
-                          value={editingTitle}
-                          onChangeText={setEditingTitle}
-                          style={styles.editInput}
-                        />
-                        <TouchableOpacity onPress={() => updateTodo(item.id)}>
-                          <Text style={styles.saveText}>Save</Text>
-                        </TouchableOpacity>
+          {activeTab === "list" ? (
+            <>
+              <Text style={styles.header}>My To-Do List</Text>
+
+              <TouchableOpacity
+                style={styles.dropdownHeader}
+                onPress={() => setShowAddForm((prev) => !prev)}
+                activeOpacity={0.8}
+              >
+                <Text style={styles.dropdownHeaderText}>
+                  {showAddForm ? "Hide Add Task" : "Add New Task"}
+                </Text>
+                <Text style={styles.dropdownArrow}>{showAddForm ? "▲" : "▼"}</Text>
+              </TouchableOpacity>
+
+              {showAddForm && (
+                <View style={styles.dropdownContent}>
+                  <TextInput
+                    value={title}
+                    onChangeText={setTitle}
+                    placeholder="Enter a task"
+                    style={styles.input}
+                  />
+                  <TouchableOpacity
+                    style={styles.input}
+                    onPress={() => setShowPicker(true)}
+                    activeOpacity={0.8}
+                  >
+                    <Text
+                      style={[
+                        styles.inputLikeText,
+                        !selectedDate && styles.placeholderText,
+                      ]}
+                    >
+                      {selectedDate
+                        ? selectedDate.toLocaleDateString()
+                        : "Select Deadline"}
+                    </Text>
+                  </TouchableOpacity>
+
+                  {showPicker && (
+                    <>
+                      <DateTimePicker
+                        value={selectedDate || new Date()}
+                        mode="date"
+                        display={Platform.OS === "ios" ? "inline" : "default"}
+                        onChange={(event, date) => {
+                          if (Platform.OS === "android") {
+                            setShowPicker(false);
+
+                            if (event.type === "set" && date) {
+                              setSelectedDate(date);
+                            }
+
+                            return;
+                          }
+
+                          if (date) {
+                            setSelectedDate(date);
+                          }
+                        }}
+                        style={{ marginBottom: 10 }}
+                      />
+
+                      {Platform.OS === "ios" && (
                         <TouchableOpacity
-                          onPress={() => {
-                            setEditingId(null);
-                            setEditingTitle("");
-                          }}
+                          onPress={() => setShowPicker(false)}
+                          style={styles.doneButton}
                         >
-                          <Text style={styles.cancelText}>Cancel</Text>
+                          <Text style={styles.doneButtonText}>Done</Text>
                         </TouchableOpacity>
+                      )}
+                    </>
+                  )}
+
+                  <TouchableOpacity
+                    style={styles.addButton}
+                    onPress={handleAddTodo}
+                    disabled={adding}
+                  >
+                    <Text style={styles.addButtonText}>
+                      {adding ? "Adding..." : "Add"}
+                    </Text>
+                  </TouchableOpacity>
+                </View>
+              )}
+
+              <View style={styles.filterRow}>
+                {["all", "active", "completed"].map((f) => (
+                  <TouchableOpacity key={f} onPress={() => setFilter(f as any)}>
+                    <Text
+                      style={[
+                        styles.filterText,
+                        filter === f && styles.activeFilter,
+                      ]}
+                    >
+                      {f.charAt(0).toUpperCase() + f.slice(1)}
+                    </Text>
+                  </TouchableOpacity>
+                ))}
+              </View>
+
+              {loading ? (
+                <Text>Loading...</Text>
+              ) : (
+                <FlatList
+                  data={filteredTodos}
+                  keyExtractor={(item) => item.id}
+                  renderItem={({ item }) => {
+                    const status = item.is_completed
+                      ? "completed"
+                      : getDeadlineStatus(item.deadline_at);
+                    return (
+                      <View style={[styles.todoItem, getDeadlineStyle(status)]}>
+                        {editingId === item.id ? (
+                          <View style={styles.editRow}>
+                            <TextInput
+                              value={editingTitle}
+                              onChangeText={setEditingTitle}
+                              style={styles.editInput}
+                            />
+                            <TouchableOpacity onPress={() => updateTodo(item.id)}>
+                              <Text style={styles.saveText}>Save</Text>
+                            </TouchableOpacity>
+                            <TouchableOpacity
+                              onPress={() => {
+                                setEditingId(null);
+                                setEditingTitle("");
+                              }}
+                            >
+                              <Text style={styles.cancelText}>Cancel</Text>
+                            </TouchableOpacity>
+                          </View>
+                        ) : (
+                          <>
+                            <TouchableOpacity
+                              onPress={() => toggleTodo(item)}
+                              style={styles.todoContent}
+                            >
+                              <Text
+                                style={[
+                                  styles.todoText,
+                                  item.is_completed && styles.completed,
+                                ]}
+                              >
+                                {item.is_completed ? "✅" : "⬜"} {item.title}
+                              </Text>
+                              {item.deadline_at && (
+                                <Text style={styles.deadlineText}>
+                                  Due:{" "}
+                                  {new Date(item.deadline_at).toLocaleDateString()}
+                                </Text>
+                              )}
+                              {status !== "none" && getDeadlineLabel(status) && (
+                                <Text style={styles.deadlineLabel}>
+                                  {getDeadlineLabel(status)}
+                                </Text>
+                              )}
+                            </TouchableOpacity>
+                            <View style={styles.actionsRow}>
+                              <TouchableOpacity
+                                onPress={() => {
+                                  setEditingId(item.id);
+                                  setEditingTitle(item.title);
+                                }}
+                              >
+                                <Text style={styles.editText}>Edit</Text>
+                              </TouchableOpacity>
+                              <TouchableOpacity onPress={() => deleteTodo(item.id)}>
+                                <Text style={styles.deleteText}>Delete</Text>
+                              </TouchableOpacity>
+                            </View>
+                          </>
+                        )}
                       </View>
-                    ) : (
-                      <>
-                        <TouchableOpacity
-                          onPress={() => toggleTodo(item)}
-                          style={styles.todoContent}
-                        >
-                          <Text
-                            style={[
-                              styles.todoText,
-                              item.is_completed && styles.completed,
-                            ]}
-                          >
-                            {item.is_completed ? "✅" : "⬜"} {item.title}
-                          </Text>
-                          {item.deadline_at && (
-                            <Text style={styles.deadlineText}>
-                              Due:{" "}
-                              {new Date(item.deadline_at).toLocaleDateString()}
-                            </Text>
-                          )}
-                          {status !== "none" && getDeadlineLabel(status) && (
-                            <Text style={styles.deadlineLabel}>
-                              {getDeadlineLabel(status)}
-                            </Text>
-                          )}
-                        </TouchableOpacity>
-                        <View style={styles.actionsRow}>
-                          <TouchableOpacity
-                            onPress={() => {
-                              setEditingId(item.id);
-                              setEditingTitle(item.title);
-                            }}
-                          >
-                            <Text style={styles.editText}>Edit</Text>
-                          </TouchableOpacity>
-                          <TouchableOpacity onPress={() => deleteTodo(item.id)}>
-                            <Text style={styles.deleteText}>Delete</Text>
-                          </TouchableOpacity>
-                        </View>
-                      </>
-                    )}
-                  </View>
-                );
+                    );
+                  }}
+                  ListEmptyComponent={<Text>No To-Do's yet.</Text>}
+                />
+              )}
+            </>
+          ) : (
+            <PomodoroTimer
+              minutes={minutes}
+              seconds={seconds}
+              isActive={isActive}
+              isBreak={isBreak}
+              onToggle={handleToggle}
+              onReset={() => {
+                setIsActive(false);
+                expirationTimeRef.current = null;
+                setMinutes(isBreak ? 5 : 25);
+                setSeconds(0);
               }}
-              ListEmptyComponent={<Text>No To-Do's yet.</Text>}
+              onSwitchMode={handleSwitchMode}
             />
           )}
-        </>
-      ) : (
-        <PomodoroTimer
-          minutes={minutes}
-          seconds={seconds}
-          isActive={isActive}
-          isBreak={isBreak}
-          onToggle={handleToggle}
-          onReset={() => {
-            setIsActive(false);
-            expirationTimeRef.current = null;
-            setMinutes(isBreak ? 5 : 25);
-            setSeconds(0);
-          }}
-          onSwitchMode={handleSwitchMode}
-        />
-      )}
-    </View>
-  );
-}
+        </View>
+      );
+    }
 
-const styles = StyleSheet.create({
-  container: { flex: 1, padding: 20, paddingTop: 60 },
-  header: {
-    fontSize: 24,
-    fontWeight: "bold",
-    marginBottom: 20,
-    textAlign: "center",
-  },
-  input: {
-    borderWidth: 1,
-    borderColor: "#ccc",
-    borderRadius: 8,
-    marginBottom: 8,
-    paddingHorizontal: 12,
-    height: 44,
-    justifyContent: "center",
-    backgroundColor: "#fff",
-    fontSize: 16,
-  },
-  addButton: {
-    backgroundColor: "#6320c7",
-    padding: 8,
-    marginTop: 16,
-    borderRadius: 8,
-    justifyContent: "center",
-    alignItems: "center",
-  },
-  addButtonText: { color: "#fff", fontWeight: "600" },
-  todoItem: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
-    paddingVertical: 12,
-    paddingHorizontal: 12,
-    borderBottomWidth: 1,
-    borderWidth: 1,
-    borderRadius: 10,
-    marginBottom: 10,
-  },
-  todoText: { fontSize: 16 },
-  completed: { textDecorationLine: "line-through", color: "gray" },
-  todoContent: { flex: 1 },
-  deleteText: { color: "red", fontWeight: "600", marginLeft: 12 },
-  filterRow: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    marginBottom: 16,
-    paddingHorizontal: 4,
-  },
-  filterText: { fontSize: 16, color: "#444" },
-  activeFilter: { color: "#6320c7", fontWeight: "700" },
-  actionsRow: { flexDirection: "row", alignItems: "center", gap: 12 },
-  editText: { color: "#6320c7", fontWeight: "600", marginRight: 8 },
-  editRow: { flex: 1, flexDirection: "row", alignItems: "center", gap: 8 },
-  editInput: {
-    flex: 1,
-    borderWidth: 1,
-    borderColor: "#ccc",
-    borderRadius: 8,
-    paddingHorizontal: 10,
-    height: 40,
-    backgroundColor: "#fff",
-  },
-  saveText: { color: "#6320c7", fontWeight: "700" },
-  cancelText: { color: "gray", fontWeight: "600" },
-  deadlineText: { fontSize: 12, color: "#555", marginTop: 4 },
-  deadlineLabel: {
-    fontSize: 11,
-    fontWeight: "600",
-    marginTop: 2,
-    color: "#444",
-  },
-  inputLikeText: { fontSize: 16, lineHeight: 20, color: "#000" },
-  placeholderText: { color: "#999" },
-  tabSwitcher: {
-    flexDirection: "row",
-    marginBottom: 20,
-    borderBottomWidth: 1,
-    borderBottomColor: "#eee",
-  },
-  tabItem: { flex: 1, paddingVertical: 12, alignItems: "center" },
-  activeTabBorder: { borderBottomWidth: 3, borderBottomColor: "#6320c7" },
-  tabLabel: { fontSize: 16, color: "#999", fontWeight: "600" },
-  activeTabLabel: { color: "#6320c7" },
-  dropdownHeader: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
-    backgroundColor: "#6320c7",
-    paddingHorizontal: 14,
-    paddingVertical: 12,
-    borderRadius: 10,
-    marginBottom: 16,
-  },
-  dropdownHeaderText: { color: "#fff", fontSize: 16, fontWeight: "600" },
-  dropdownArrow: { color: "#fff", fontSize: 16, fontWeight: "700" },
-  dropdownContent: {
-    backgroundColor: "#f8f6fc",
-    borderRadius: 10,
-    padding: 12,
-    marginBottom: 16,
-  },
-  doneButton: { alignSelf: "flex-end", marginBottom: 10 },
-  doneButtonText: { color: "#6320c7", fontWeight: "600" },
-});
-
+    const styles = StyleSheet.create({
+      container: { flex: 1, padding: 20, paddingTop: 60 },
+      header: {
+        fontSize: 24,
+        fontWeight: "bold",
+        marginBottom: 20,
+        textAlign: "center",
+      },
+      input: {
+        borderWidth: 1,
+        borderColor: "#ccc",
+        borderRadius: 8,
+        marginBottom: 8,
+        paddingHorizontal: 12,
+        height: 44,
+        justifyContent: "center",
+        backgroundColor: "#fff",
+        fontSize: 16,
+      },
+      addButton: {
+        backgroundColor: "#6320c7",
+        padding: 8,
+        marginTop: 16,
+        borderRadius: 8,
+        justifyContent: "center",
+        alignItems: "center",
+      },
+      addButtonText: { color: "#fff", fontWeight: "600" },
+      todoItem: {
+        flexDirection: "row",
+        alignItems: "center",
+        justifyContent: "space-between",
+        paddingVertical: 12,
+        paddingHorizontal: 12,
+        borderBottomWidth: 1,
+        borderWidth: 1,
+        borderRadius: 10,
+        marginBottom: 10,
+      },
+      todoText: { fontSize: 16 },
+      completed: { textDecorationLine: "line-through", color: "gray" },
+      todoContent: { flex: 1 },
+      deleteText: { color: "red", fontWeight: "600", marginLeft: 12 },
+      filterRow: {
+        flexDirection: "row",
+        justifyContent: "space-between",
+        marginBottom: 16,
+        paddingHorizontal: 4,
+      },
+      filterText: { fontSize: 16, color: "#444" },
+      activeFilter: { color: "#6320c7", fontWeight: "700" },
+      actionsRow: { flexDirection: "row", alignItems: "center", gap: 12 },
+      editText: { color: "#6320c7", fontWeight: "600", marginRight: 8 },
+      editRow: { flex: 1, flexDirection: "row", alignItems: "center", gap: 8 },
+      editInput: {
+        flex: 1,
+        borderWidth: 1,
+        borderColor: "#ccc",
+        borderRadius: 8,
+        paddingHorizontal: 10,
+        height: 40,
+        backgroundColor: "#fff",
+      },
+      saveText: { color: "#6320c7", fontWeight: "700" },
+      cancelText: { color: "gray", fontWeight: "600" },
+      deadlineText: { fontSize: 12, color: "#555", marginTop: 4 },
+      deadlineLabel: {
+        fontSize: 11,
+        fontWeight: "600",
+        marginTop: 2,
+        color: "#444",
+      },
+      inputLikeText: { fontSize: 16, lineHeight: 20, color: "#000" },
+      placeholderText: { color: "#999" },
+      tabSwitcher: {
+        flexDirection: "row",
+        marginBottom: 20,
+        borderBottomWidth: 1,
+        borderBottomColor: "#eee",
+      },
+      tabItem: { flex: 1, paddingVertical: 12, alignItems: "center" },
+      activeTabBorder: { borderBottomWidth: 3, borderBottomColor: "#6320c7" },
+      tabLabel: { fontSize: 16, color: "#999", fontWeight: "600" },
+      activeTabLabel: { color: "#6320c7" },
+      dropdownHeader: {
+        flexDirection: "row",
+        justifyContent: "space-between",
+        alignItems: "center",
+        backgroundColor: "#6320c7",
+        paddingHorizontal: 14,
+        paddingVertical: 12,
+        borderRadius: 10,
+        marginBottom: 16,
+      },
+      dropdownHeaderText: { color: "#fff", fontSize: 16, fontWeight: "600" },
+      dropdownArrow: { color: "#fff", fontSize: 16, fontWeight: "700" },
+      dropdownContent: {
+        backgroundColor: "#f8f6fc",
+        borderRadius: 10,
+        padding: 12,
+        marginBottom: 16,
+      },
+      doneButton: { alignSelf: "flex-end", marginBottom: 10 },
+      doneButtonText: { color: "#6320c7", fontWeight: "600" },
+    });
