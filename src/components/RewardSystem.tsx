@@ -115,6 +115,7 @@ export const RewardSystem = ({
             </View>
 
             <TouchableOpacity
+              accessibilityRole="button"
               style={styles.starButton}
               onPress={() => setShowRewardsDetails((prev) => !prev)}
             >
