@@ -2,7 +2,7 @@ import { useLocalSearchParams } from "expo-router";
 import { View, Text, StyleSheet, Pressable } from "react-native";
 import { spots, floors } from "../../config/studySpots";
 import { getCurrentLocation } from "../../lib/location";
-import { useSupabase } from "src/lib/supabase-client";
+import { useSupabase } from "../../lib/supabase-client";
 import { getDistanceMeters } from "../../lib/distance";
 import * as Location from "expo-location";
 import { useRouter } from "expo-router";

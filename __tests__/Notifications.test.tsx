@@ -1,3 +1,11 @@
+jest.mock('expo-notifications', () => ({
+  setNotificationHandler: jest.fn(),
+  getPermissionsAsync: jest.fn(),
+  requestPermissionsAsync: jest.fn(),
+  getExpoPushTokenAsync: jest.fn(),
+  addNotificationReceivedListener: jest.fn(() => ({ remove: jest.fn() })),
+  addNotificationResponseReceivedListener: jest.fn(() => ({ remove: jest.fn() })),
+}));
 
 import "../src/lib/notifications"; // ensures setNotificationHandler runs
 
@@ -7,18 +15,6 @@ import {
   saveTokenToSupabase,
 } from "../src/lib/notifications";
 
-// -----------------------------
-// MOCKS
-// -----------------------------
-jest.mock("expo-notifications", () => ({
-  getPermissionsAsync: jest.fn(),
-  requestPermissionsAsync: jest.fn(),
-  getExpoPushTokenAsync: jest.fn(),
-  addNotificationReceivedListener: jest.fn(),
-  addNotificationResponseReceivedListener: jest.fn(),
-  setNotificationHandler: jest.fn(),
-}));
-
 const mockSupabase = {
   from: jest.fn().mockReturnThis(),
   upsert: jest.fn(),
@@ -26,6 +22,7 @@ const mockSupabase = {
 
 describe("Notifications Framework — Full Test Suite", () => {
   beforeEach(() => {
+    jest.resetModules();
     jest.clearAllMocks();
   });
 
@@ -146,8 +143,37 @@ describe("Notifications Framework — Full Test Suite", () => {
   // ---------------------------------------------------------
 
   it("sets notification handler correctly", () => {
-    expect(Notifications.setNotificationHandler).toHaveBeenCalled();
+    const Notifications = require('expo-notifications');
+    require('../src/lib/notifications');
+    expect(Notifications.setNotificationHandler).toHaveBeenCalledWith(
+          expect.objectContaining({
+            handleNotification: expect.any(Function),
+          })
+        );
   });
+
+  it("the handler function should return the correct configuration", async () => {
+      const Notifications = require('expo-notifications');
+      require('../src/lib/notifications');
+
+      // Extract the 'handleNotification' function passed to the mock
+      const handlerCall = (Notifications.setNotificationHandler as jest.Mock).mock.calls[0][0];
+      const result = await handlerCall.handleNotification();
+
+      const mockFunc = Notifications.setNotificationHandler;
+
+      // Verify call exists
+      expect(mockFunc).toHaveBeenCalled();
+
+      // Verify the return values of the handler
+      expect(result).toEqual({
+        shouldPlaySound: false,
+        shouldSetBadge: false,
+        shouldShowBanner: true,
+        shouldShowList: true,
+      });
+   });
+
 
   // ---------------------------------------------------------
   // 4. LISTENER BEHAVIOR
