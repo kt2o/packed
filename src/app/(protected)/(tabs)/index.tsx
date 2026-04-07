@@ -1,7 +1,7 @@
 import { useEffect, useState, useCallback } from "react";
 import { useFocusEffect, useRouter } from "expo-router";
 import { StyleSheet, ScrollView, RefreshControl, View } from "react-native";
-import { supabase } from "../../../lib/supabase-client";
+import { useSupabase } from "../../../lib/supabase-client";
 import React from "react";
 
 import LocationCard from "../../../components/LocationCard";
@@ -19,7 +19,7 @@ function getStatus(count: number, capacity: number) {
 
 export default function HomeScreen() {
   const router = useRouter();
-
+  const supabase = useSupabase();
 
   const [spotsWithStatus, setSpotsWithStatus] = useState([]);
   const [refreshing, setRefreshing] = useState(false);

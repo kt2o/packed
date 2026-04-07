@@ -3,7 +3,7 @@ import { Text, View, Button, Platform } from 'react-native';
 import * as Device from 'expo-device';
 import * as Notifications from 'expo-notifications';
 import Constants from 'expo-constants';
-import {supabase} from "src/lib/supabase-client";
+import { useSupabase } from "./supabase-client";
 import { getDevicePushTokenAsync } from "expo-notifications";
 
 
@@ -22,6 +22,7 @@ export default function App() {
   const [notification, setNotification] = useState<Notifications.Notification | undefined>(
     undefined
   );
+  const supabase = useSupabase();
 
   useEffect(() => {
     registerForPushNotificationsAsync().then(token => token && setExpoPushToken(token));
@@ -86,19 +87,25 @@ export async function registerForPushNotificationsAsync() {
       return null;
     }
 
+   try{
     const tokenResponse = await Notifications.getExpoPushTokenAsync();
     const token = tokenResponse.data;
     console.log("Expo push token:", token.data);
-
-
     console.log("Push token:", token);
-
     return token;
-
+    } catch (error: any) {
+    // Check if it's a 503 or transient error
+    if (error.message.includes("503") || error.message.includes("SERVICE_UNAVAILABLE")) {
+    console.warn("Expo servers are busy. Notification token will be retried later.");
+     } else {
+     console.error("Failed to get push token:", error);
+      }
+     return null; // Return null so the app continues without crashing
+    }
 
 }
 
-export async function saveTokenToSupabase(token: string, userId: string) {
+export async function saveTokenToSupabase(supabase: any, token: string, userId: string) {
   if (!token || !userId) return;
 
   console.log("Saving token to Supabase:", token);

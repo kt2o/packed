@@ -2,8 +2,10 @@
   "expo": {
     "name": "Packed",
     "slug": "Packed",
+
     "scheme": "packedApp",
     "owner": "deethyam",
+
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
@@ -44,6 +46,7 @@
     },
     "plugins": [
       "expo-router",
+      "expo-font",
       "@react-native-community/datetimepicker",
       "expo-notifications"
     ],
@@ -51,6 +54,7 @@
       "router": {},
       "eas": {
         "projectId": "11b4d628-737d-4952-9059-d17057d54621"
+
       },
       "firebaseServerKey": "YOUR_FCM_SERVER_KEY_HERE"
     }

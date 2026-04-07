@@ -1,8 +1,8 @@
-import { useEffect, useMemo, useState } from "react";
-import { supabase } from "../../../lib/supabase-client";
+import { useCallback, useEffect, useMemo, useState } from "react";
+import { useSupabase } from "../../../lib/supabase-client";
 import type { Status } from "../../../types/status";
-import { useLocalSearchParams, useRouter } from "expo-router";
-import { spots } from "src/config/studySpots";
+import { useFocusEffect, useLocalSearchParams, useRouter } from "expo-router";
+import { spots } from "../../../config/studySpots";
 import { useUser } from "@clerk/clerk-expo";
 
 import {
@@ -20,22 +20,39 @@ import LocationDropDown from "../../../components/LocationDropDown";
 export default function SubmitScreen() {
   const router = useRouter();
   const { user } = useUser();
+  const supabase = useSupabase();
 
-  const { verified } = useLocalSearchParams<{ verified: string }>();
+  const { verified, id, floorId, status } = useLocalSearchParams<{
+    verified: string;
+    id?: string;
+    floorId?: string;
+    status?: string;
+  }>();
 
   const [selectedSpot, setSelectedSpot] = useState<string>("");
   const [selectedFloor, setSelectedFloor] = useState<string>("");
   const [selectedStatus, setSelectedStatus] = useState<Status>("empty");
   const [submitting, setSubmitting] = useState(false);
 
+  useFocusEffect(
+    useCallback(() => {
+      setSubmitting(false);
+    }, []),
+  );
+
   useEffect(() => {
-      if (verified === "true") {
-    submitToSupabase();
-  } else {
-    setSubmitting(false)
-    //Alert.alert("Check-in Failed", "You are not close enough. Please select another location.");
-  }
-}, [verified]);
+    if (verified === "true") {
+      // 1. Sync the UI state (for the form display)
+      console.log("URL Params received:", { id, floorId, status });
+      if (id) setSelectedSpot(String(id));
+      if (floorId) setSelectedFloor(String(floorId));
+      if (status) setSelectedStatus(status as Status);
+
+      // 2. Pass the params DIRECTLY to the function
+      // instead of waiting for state to update
+      submitToSupabase(id, floorId, status as Status);
+    }
+  }, [verified]);
 
   const locations = useMemo(() => {
     return spots.map((spot) => ({
@@ -46,7 +63,7 @@ export default function SubmitScreen() {
 
   const floors = useMemo(
     () => spots.find((s) => s.id === selectedSpot)?.floors ?? [],
-    [selectedSpot]
+    [selectedSpot],
   );
 
   const handleSubmit = async () => {
@@ -58,42 +75,62 @@ export default function SubmitScreen() {
     setSubmitting(true);
 
     router.push({
-    pathname: "/spot/[id]",
-    params: { id: selectedSpot, returnTo: "submit" },  // ← pass returnTo so spot page knows where to go back
-  });
-
+      pathname: "/spot/[id]",
+      params: {
+        id: selectedSpot,
+        floorId: selectedFloor,
+        status: selectedStatus,
+        returnTo: "submit",
+      },
+    });
   };
 
-  const submitToSupabase = async () => {
-  const { data: row } = await supabase
-    .from("user_database")
-    .select("id")
-    .eq("user_email", user.primaryEmailAddress.emailAddress)
-    .single();
+  const submitToSupabase = async (
+    passedId?: string,
+    passedFloorId?: string,
+    passedStatus?: Status,
+  ) => {
+    const userId = user.id;
 
-  const userId = user.id;
+    // Use the passed arguments OR the state as a fallback
+    const finalSpotId = passedId || selectedSpot;
+    const finalFloorId = passedFloorId || selectedFloor;
+    const finalStatus = passedStatus || selectedStatus;
 
-  const { error } = await supabase.from("study_spot_status").insert([
-    {
-      spot_id: selectedSpot,
-      status: selectedStatus,
-      user_id: userId,
-      floor_id: selectedFloor,
-    },
-  ]);
-
-  setSubmitting(false);
-
-  if (error) {
-      console.error("Insert error:", error);
-      Alert.alert("Error", error.message);
+    if (!finalSpotId) {
+      Alert.alert("Error", "No location was provided.");
+      setSubmitting(false);
       return;
     }
 
-  Alert.alert("Success", `Reported as ${selectedStatus}`, [
-    { text: "OK", onPress: () => router.back() },
-  ]);
-};
+    try {
+      const { error } = await supabase.from("study_spot_status").insert([
+        {
+          spot_id: finalSpotId,
+          status: finalStatus,
+          user_id: userId,
+          floor_id: finalFloorId,
+        },
+      ]);
+
+      setSubmitting(false);
+
+      if (error) {
+        console.error("Insert error:", error);
+        Alert.alert("Error", error.message);
+        return;
+      }
+
+      Alert.alert("Success", `Reported as ${finalStatus}`, [
+        { text: "OK", onPress: () => router.back() },
+      ]);
+    } catch (err) {
+      console.error("Unexpected error:", err);
+      Alert.alert("Error", "Something went wrong. Please try again.");
+    } finally {
+      setSubmitting(false);
+    }
+  };
 
   return (
     <ScrollView
@@ -108,7 +145,7 @@ export default function SubmitScreen() {
         onChange={setSelectedSpot}
         placeholder="Where are you?"
       ></LocationDropDown>
-      
+
       {floors.length > 0 && (
         <View style={styles.inputContainer}>
           <Text style={styles.label}>Which floor are you on?</Text>
@@ -135,7 +172,10 @@ export default function SubmitScreen() {
           onValueChange={(value) => setSelectedStatus(value as Status)}
           value={selectedStatus}
         >
-          <TouchableOpacity style={styles.radioOption} onPress={() => setSelectedStatus("empty")}>
+          <TouchableOpacity
+            style={styles.radioOption}
+            onPress={() => setSelectedStatus("empty")}
+          >
             <RadioButton value="empty" />
             <Text style={styles.radioLabel}>Empty</Text>
           </TouchableOpacity>
@@ -143,7 +183,10 @@ export default function SubmitScreen() {
             <RadioButton value="normal" />
             <Text style={styles.radioLabel}>Normal</Text>
           </View> */}
-          <TouchableOpacity style={styles.radioOption} onPress={() => setSelectedStatus("packed")}>
+          <TouchableOpacity
+            style={styles.radioOption}
+            onPress={() => setSelectedStatus("packed")}
+          >
             <RadioButton value="packed" />
             <Text style={styles.radioLabel}>Packed</Text>
           </TouchableOpacity>

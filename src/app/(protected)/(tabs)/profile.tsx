@@ -13,10 +13,11 @@ import { useUser } from "@clerk/clerk-expo";
 import { RewardSystem } from "src/components/RewardSystem";
 import { SignOutButton } from "src/components/sign-out-button";
 import { EditProfileModal } from "src/components/EditProfileModal";
-import { supabase } from "../../../lib/supabase-client";
+import { useSupabase } from "../../../lib/supabase-client";
 
 export default function ProfileScreen() {
   const { user, isLoaded } = useUser();
+  const supabase = useSupabase();
   const userId = user?.id;
   const [isEditModalVisible, setIsEditModalVisible] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
