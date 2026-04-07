@@ -1,4 +1,3 @@
-import React from "react";
 import { render, waitFor, fireEvent } from "@testing-library/react-native";
 
 const mockUser = { id: "test-user" };
@@ -12,6 +11,9 @@ jest.mock("@clerk/clerk-expo", () => ({
 
 jest.mock("../src/lib/supabase-client", () => ({
   __esModule: true,
+  useSupabase: () => ({
+    from: mockFrom,
+  }),
   supabase: {
     from: mockFrom,
   },
@@ -65,8 +67,7 @@ jest.mock("../src/components/PomodoroTimer", () => {
   };
 });
 
-// Mock TodoItem to avoid row-render crashes in route integration tests.
-// TodoItem can be tested separately in its own test file.
+
 jest.mock("../src/features/todo/TodoItem", () => {
   const React = require("react");
   const { View, Text, TouchableOpacity, TextInput } = require("react-native");
