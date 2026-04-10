@@ -20,6 +20,11 @@ const mockSupabase = {
   upsert: jest.fn(),
 };
 
+jest.mock("@clerk/clerk-expo", () => ({
+  useUser: jest.fn(() => ({ user: { id: "test-user" } })),
+  ClerkProvider: ({ children }: any) => children,
+}));
+
 describe("Notifications Framework — Full Test Suite", () => {
   beforeEach(() => {
     jest.resetModules();

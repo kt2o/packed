@@ -1,0 +1,28 @@
+{
+  "$schema": "./node_modules/@stryker-mutator/core/schema/stryker-schema.json",
+  "testRunner": "jest",
+  "mutate": [
+    "src/utils/**/*.tsx"
+  ],
+  "ignorePatterns": [
+    "ios",
+    "android",
+    "node_modules",
+    ".expo",
+    "assets",
+    "dist",
+    "build"
+  ],
+  "jest": {
+    "projectType": "custom",
+    "configFile": "jest.config.js",
+    "enableFindRelatedTests": false
+  },
+  "reporters": ["html", "clear-text", "progress"],
+  "coverageAnalysis": "off",
+  "tsconfigFile": "tsconfig.json",
+  "concurrency": 2,
+  "tempDirName": ".stryker-tmp",
+  "disableTypeChecks": "false",
+  "allowConsoleColors": true
+}

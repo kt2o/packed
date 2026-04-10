@@ -55,3 +55,8 @@ ios/
 !.vscode/settings.json
 !.vscode/extensions.json
 
+# -----------------------------
+# Dead test
+# -----------------------------
+.stryker-tmp/
+.coverage/

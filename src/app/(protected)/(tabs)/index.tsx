@@ -1,6 +1,6 @@
-import { useEffect, useState, useCallback } from "react";
+import { useEffect, useState, useCallback, useMemo } from "react";
 import { useFocusEffect, useRouter } from "expo-router";
-import { StyleSheet, ScrollView, RefreshControl, View } from "react-native";
+import { StyleSheet, ScrollView, RefreshControl, View, Text } from "react-native";
 import { useSupabase } from "../../../lib/supabase-client";
 import React from "react";
 
@@ -21,8 +21,15 @@ export default function HomeScreen() {
   const router = useRouter();
   const supabase = useSupabase();
 
-  const [spotsWithStatus, setSpotsWithStatus] = useState([]);
-  const [refreshing, setRefreshing] = useState(false);
+    const [spotsWithStatus, setSpotsWithStatus] = useState([]);
+    const [spotsWithOpinion, setSpotsWithOpinion] = useState([]);
+    const [refreshing, setRefreshing] = useState(false);
+    const [expandedSpotId, setExpandedSpotId] = useState<string | null>(null);
+
+    const selectedSpotObj = useMemo(() => {
+      return spotsWithOpinion.find((s) => s.id === expandedSpotId);
+    }, [expandedSpotId, spotsWithOpinion]);
+
 
   async function fetchStudySpotStatus() {
     const { data: counts, error } = await supabase
@@ -90,17 +97,35 @@ export default function HomeScreen() {
   };
 
   useEffect(() => {
-    fetchStudySpotStatus();
-    fetchFloorStatus();
-  }, []);
+      fetchStudySpotStatus();
+      fetchOpinion();
+    }, []);
 
-  const onRefresh = async () => {
-    setRefreshing(true);
-    await Promise.all([fetchStudySpotStatus(), fetchFloorStatus()]);
-    setRefreshing(false);
-  };
+    const onRefresh = async () => {
+      setRefreshing(true);
+      await Promise.all([fetchStudySpotStatus(), fetchOpinion()]);
+      setRefreshing(false);
+    };
 
   const [openId, setOpenId] = useState<string | null>(null);
+
+  async function fetchOpinion() {
+      const { data } = await supabase
+        .from("spot_opinion_summary")
+        .select("*");
+
+      const merged = spots.map((spot) => {
+        const match = data?.find((o) => o.spot_id === spot.id);
+
+        return {
+          ...spot,
+          majorityStatus: match?.majority_status ?? "unknown",
+          percentage: match?.percentage ?? 0,
+        };
+      });
+
+      setSpotsWithOpinion(merged);
+    }
 
 return (
     <ScrollView
@@ -110,40 +135,47 @@ return (
       }
     >
       {spotsWithStatus.map((spot) => {
-        const percentage = Math.round((spot.count / spot.capacity) * 100);
+        const opinion = spotsWithOpinion.find((o) => o.id === spot.id);
+
         return (
           <View key={spot.id}>
-          <LocationCard
-            key={spot.id}
-            id={spot.id}
-            displayName={spot.displayName}
-            image={spot.image}
-            status={spot.status}
-            count={spot.count}
-            capacity={spot.capacity}
-            percentage={percentage}
-            onPress={
-              () => setOpenId((prev) => prev === spot.id ? null : spot.id)
-              /* () =>
-              router.push({
-                pathname: "/spot/[id]",
-                params: { id: spot.id },
-              }) */
-            }
-          />
-          {/* {spot.floors && spot.floors.length > 0 && (
-            <FloorAccordion floors={spot.floors} statusByFloorId={statusByFloorId} />
-          )} */}
-          {spot.floors && spot.floors.length > 0 && (
-    <FloorAccordion isOpen={openId === spot.id} floors={spot.floors} statusByFloorId={statusByFloorId} />
-  )}
+            <LocationCard
+              id={spot.id}
+              displayName={spot.displayName}
+              image={spot.image}
+              status={spot.status}
+              count={spot.count}
+              capacity={spot.capacity}
+              percentage={Math.round((spot.count / spot.capacity) * 100)}
+              onPress={() =>
+                setExpandedSpotId((prev) =>
+                  prev === spot.id ? null : spot.id
+                )
+              }
+            />
+
+            {expandedSpotId === spot.id && selectedSpotObj && (
+              <View style={styles.infoCard}>
+                <Text style={styles.infoText}>
+                  {selectedSpotObj.percentage}% of users think this spot is{" "}
+                  {selectedSpotObj.majorityStatus}.
+                </Text>
+              </View>
+            )}
+
+
+            {spot.floors && (
+              <FloorAccordion
+                isOpen={expandedSpotId === spot.id}
+                floors={spot.floors}
+                statusByFloorId={{}}
+              />
+            )}
           </View>
         );
       })}
     </ScrollView>
-);
-
-
+  );
 }
 
 const styles = StyleSheet.create({
@@ -151,4 +183,42 @@ const styles = StyleSheet.create({
     padding: 16,
     gap: 14,
   },
+infoCard: {
+  backgroundColor: "#fff",
+  padding: 12,
+  borderRadius: 10,
+  marginBottom: 12,
+  shadowColor: "#000",
+  shadowOpacity: 0.1,
+  shadowRadius: 4,
+  elevation: 3,
+},
+
+infoHeader: {
+  flexDirection: "row",
+  justifyContent: "space-between",
+  alignItems: "center",
+},
+
+infoTitle: {
+  fontSize: 18,
+  fontWeight: "700",
+  color: "#333",
+},
+
+dots: {
+  fontSize: 22,
+  paddingHorizontal: 8,
+  paddingVertical: 4,
+},
+
+infoBody: {
+  marginTop: 10,
+},
+
+infoText: {
+  fontSize: 15,
+  color: "#6A4BCB",
+  marginBottom: 4,
+},
 });

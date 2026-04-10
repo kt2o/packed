@@ -1,16 +1,17 @@
 jest.mock("../src/config/studySpots", () => ({
-      spots: [
-        {
-          id: "ksl",
-          displayName: "KSL",
-          lat: 10,
-          lng: 20,
-          radius: 50,
-          floors: [{ id: "ksl1", displayName: "Floor 1" }],
-        },
-      ],
-    }));
+  spots: [
+    {
+      id: "ksl",
+      displayName: "KSL",
+      lat: 10,
+      lng: 20,
+      radius: 50,
+      floors: [{ id: "ksl1", displayName: "Floor 1" }],
+    },
+  ],
+}));
 
+// __tests__/Location.test.tsx
 import React from "react";
 import { render, fireEvent, waitFor } from "@testing-library/react-native";
 import SpotScreen from "../src/app/spot/[id]";
@@ -20,13 +21,8 @@ import { useUser } from "@clerk/clerk-expo";
 import * as Location from "expo-location";
 import { getCurrentLocation } from "../src/lib/location";
 import { getDistanceMeters } from "../src/lib/distance";
-import { spots, floors } from "../src/config/studySpots";
 
-
-
-console.log("Mocked spots:", require("../src/config/studySpots").spots);
-
-
+// ---- MODULE MOCKS ----
 jest.mock("expo-router", () => ({
   useLocalSearchParams: jest.fn(),
   useRouter: jest.fn(),
@@ -53,7 +49,8 @@ jest.mock("expo-location", () => ({
   requestForegroundPermissionsAsync: jest.fn(),
 }));
 
-global.alert = jest.fn();
+// avoid crashes on alert()
+global.alert = jest.fn() as any;
 
 // ---- TEST DATA ----
 const mockRouter = { replace: jest.fn(), push: jest.fn(), back: jest.fn() };
@@ -67,30 +64,26 @@ const mockSupabase = {
 
 const mockUser = { id: "user-123" };
 
-describe("SpotScreen", () => {
-
+describe("SpotScreen (Location)", () => {
   beforeEach(() => {
-      jest.clearAllMocks();
+    jest.clearAllMocks();
 
-      // Ensure the params match the mock data ID
-      (useLocalSearchParams as jest.Mock).mockReturnValue({
-        id: "ksl",
-        floorId: "ksl1",
-        status: "empty",
-      });
-
-      (useRouter as jest.Mock).mockReturnValue(mockRouter);
-      (useUser as jest.Mock).mockReturnValue({ user: mockUser });
-      (useSupabase as jest.Mock).mockReturnValue(mockSupabase);
+    (useLocalSearchParams as jest.Mock).mockReturnValue({
+      id: "ksl",
+      floorId: "ksl1",
+      status: "empty",
     });
 
-    test("renders spot name and radius", () => {
-      const { getByText } = render(<SpotScreen />);
+    (useRouter as jest.Mock).mockReturnValue(mockRouter);
+    (useUser as jest.Mock).mockReturnValue({ user: mockUser });
+    (useSupabase as jest.Mock).mockReturnValue(mockSupabase);
+  });
 
-      // This will now pass because the mock data says "Library"
-      expect(getByText("KSL")).toBeTruthy();
-      expect(getByText("Radius: 50 meters")).toBeTruthy();
-    });
+  test("renders spot name and radius", () => {
+    const { getByText } = render(<SpotScreen />);
+
+    expect(getByText("KSL")).toBeTruthy();
+    expect(getByText("Radius: 50 meters")).toBeTruthy();
   });
 
   test("redirects to permission screen if location denied", async () => {
@@ -112,44 +105,57 @@ describe("SpotScreen", () => {
   });
 
   test("fails check-in if user is too far", async () => {
-      (Location.getForegroundPermissionsAsync as jest.Mock).mockResolvedValue({ status: "granted" });
-      (getCurrentLocation as jest.Mock).mockResolvedValue({ coords: { latitude: 0, longitude: 0 } });
-      (getDistanceMeters as jest.Mock).mockReturnValue(999); // Force failure
-
-      const { getByText } = render(<SpotScreen />);
-      fireEvent.press(getByText("I’m here"));
-
-      await waitFor(() => {
-        // Now that alert doesn't crash the test, this will be called
-        expect(mockRouter.replace).toHaveBeenCalledWith({
-          pathname: "/submit",
-          params: { verified: "false" },
-        });
-      });
+    (Location.getForegroundPermissionsAsync as jest.Mock).mockResolvedValue({
+      status: "granted",
     });
 
+    (getCurrentLocation as jest.Mock).mockResolvedValue({
+      coords: { latitude: 0, longitude: 0 },
+    });
+
+    (getDistanceMeters as jest.Mock).mockReturnValue(999); // too far
+
+    const { getByText } = render(<SpotScreen />);
+
+    fireEvent.press(getByText("I’m here"));
+
+    await waitFor(() => {
+      expect(mockRouter.replace).toHaveBeenCalledWith({
+        pathname: "/submit",
+        params: { verified: "false" },
+      });
+    });
+  });
+
   test("inserts into Supabase and navigates on success", async () => {
-      (Location.getForegroundPermissionsAsync as jest.Mock).mockResolvedValue({ status: "granted" });
-      (getCurrentLocation as jest.Mock).mockResolvedValue({ coords: { latitude: 10, longitude: 20 } });
-      (getDistanceMeters as jest.Mock).mockReturnValue(10);
-      mockInsert.mockResolvedValue({ error: null });
+    (Location.getForegroundPermissionsAsync as jest.Mock).mockResolvedValue({
+      status: "granted",
+    });
 
-      const { getByText } = render(<SpotScreen />);
-      fireEvent.press(getByText("I’m here"));
+    (getCurrentLocation as jest.Mock).mockResolvedValue({
+      coords: { latitude: 10, longitude: 20 },
+    });
 
-      await waitFor(() => {
-        expect(mockInsert).toHaveBeenCalled();
-        expect(mockRouter.replace).toHaveBeenCalledWith({
-          pathname: "/submit",
-          params: {
-            verified: "true",
-            id: "ksl",
-            floorId: "ksl1",
-            status: "empty",
-          },
-        });
+    (getDistanceMeters as jest.Mock).mockReturnValue(10); // within radius
+    mockInsert.mockResolvedValue({ error: null });
+
+    const { getByText } = render(<SpotScreen />);
+
+    fireEvent.press(getByText("I’m here"));
+
+    await waitFor(() => {
+      expect(mockInsert).toHaveBeenCalled();
+      expect(mockRouter.replace).toHaveBeenCalledWith({
+        pathname: "/submit",
+        params: {
+          verified: "true",
+          id: "ksl",
+          floorId: "ksl1",
+          status: "empty",
+        },
       });
-      });
+    });
+  });
 
   test("handles Supabase insert error", async () => {
     (Location.getForegroundPermissionsAsync as jest.Mock).mockResolvedValue({
@@ -175,6 +181,4 @@ describe("SpotScreen", () => {
       });
     });
   });
-
-
-
+});

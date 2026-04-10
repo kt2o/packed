@@ -21,6 +21,7 @@ export default function SubmitScreen() {
   const router = useRouter();
   const { user } = useUser();
   const supabase = useSupabase();
+  const userId = user?.id;
 
 
   const { verified, id, floorId, status } = useLocalSearchParams<{
@@ -67,17 +68,48 @@ export default function SubmitScreen() {
       return;
     }
 
-    setSubmitting(true);
+    try {
+      setSubmitting(true);
 
-    router.push({
-      pathname: "/spot/[id]",
-      params: {
-      id: selectedSpot,
-      floorId: selectedFloor,
-      status: selectedStatus,
-      returnTo: "submit" },
-    });
+      // 1. Check cooldown BEFORE navigating
+      const { data: recent } = await supabase
+        .from("locations")
+        .select("updated_at")
+        .eq("user_id", userId)
+        .eq("spot_id", selectedSpot)
+        .order("updated_at", { ascending: false })
+        .limit(1);
 
+      if (recent && recent.length > 0) {
+        const last = new Date(recent[0].updated_at);
+        const now = new Date();
+        const diff = (now - last) / (1000 * 60);
+
+        if (diff < 30) {
+          Alert.alert(
+            "Check-In Complete",
+            `You must wait ${Math.ceil(30 - diff)} more minutes before checking in again.`
+          );
+          return; // finally{} will still run
+        }
+      }
+
+      // 2. Navigate ONLY if allowed
+      router.push({
+        pathname: "/spot/[id]",
+        params: {
+          id: selectedSpot,
+          floorId: selectedFloor,
+          status: selectedStatus,
+          returnTo: "submit",
+        },
+      });
+
+    } finally {
+      // 3. ALWAYS reset submitting
+      setSubmitting(false);
+      console.log("Done submitting");
+    }
   };
 
   const submitToSupabase = async (passedId?: string, passedFloorId?: string, passedStatus?: Status) => {

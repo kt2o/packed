@@ -16,11 +16,9 @@
   },
   "dependencies": {
     "@clerk/clerk-expo": "2.17.0",
-
     "@clerk/clerk-js": "5.110.0",
     "@clerk/clerk-react": "5.50.0",
     "@clerk/shared": "3.40.0",
-
     "@expo/vector-icons": "^15.0.3",
     "@react-native-community/datetimepicker": "8.4.4",
     "@react-navigation/native": "^7.1.8",
@@ -53,6 +51,8 @@
   },
   "devDependencies": {
     "@react-native-community/cli": "^20.0.0",
+    "@stryker-mutator/core": "^9.6.0",
+    "@stryker-mutator/jest-runner": "^9.6.0",
     "@testing-library/react-native": "^13.3.3",
     "@types/jest": "29.5.14",
     "@types/react": "~19.1.10",
@@ -62,8 +62,5 @@
     "supabase": "^2.76.15",
     "typescript": "~5.9.2"
   },
-  "private": true,
-  "jest": {
-    "preset": "jest-expo"
-  }
+  "private": true
 }
