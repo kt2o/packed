@@ -1,8 +1,8 @@
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { useSupabase } from "../../../lib/supabase-client";
 import type { Status } from "../../../types/status";
-import { useLocalSearchParams, useRouter } from "expo-router";
-import { spots } from "src/config/studySpots";
+import { useFocusEffect, useLocalSearchParams, useRouter } from "expo-router";
+import { spots } from "../../../config/studySpots";
 import { useUser } from "@clerk/clerk-expo";
 
 import {
@@ -21,9 +21,8 @@ export default function SubmitScreen() {
   const router = useRouter();
   const { user } = useUser();
   const supabase = useSupabase();
+
   const userId = user?.id;
-
-
   const { verified, id, floorId, status } = useLocalSearchParams<{
     verified: string;
     id?: string;
@@ -35,6 +34,12 @@ export default function SubmitScreen() {
   const [selectedFloor, setSelectedFloor] = useState<string>("");
   const [selectedStatus, setSelectedStatus] = useState<Status>("empty");
   const [submitting, setSubmitting] = useState(false);
+
+  useFocusEffect(
+    useCallback(() => {
+      setSubmitting(false);
+    }, []),
+  );
 
   useEffect(() => {
     if (verified === "true") {
@@ -59,7 +64,7 @@ export default function SubmitScreen() {
 
   const floors = useMemo(
     () => spots.find((s) => s.id === selectedSpot)?.floors ?? [],
-    [selectedSpot]
+    [selectedSpot],
   );
 
   const handleSubmit = async () => {
@@ -113,34 +118,34 @@ export default function SubmitScreen() {
   };
 
   const submitToSupabase = async (passedId?: string, passedFloorId?: string, passedStatus?: Status) => {
-    const userId = user.id;
+      const userId = user.id;
 
-    // Use the passed arguments OR the state as a fallback
-    const finalSpotId = passedId || selectedSpot;
-    const finalFloorId = passedFloorId || selectedFloor;
-    const finalStatus = passedStatus || selectedStatus;
+      // Use the passed arguments OR the state as a fallback
+      const finalSpotId = passedId || selectedSpot;
+      const finalFloorId = passedFloorId || selectedFloor;
+      const finalStatus = passedStatus || selectedStatus;
 
-    const { error } = await supabase.from("study_spot_status").insert([
-      {
-        spot_id: finalSpotId,
-        status: finalStatus,
-        user_id: userId,
-        floor_id: finalFloorId,
-      },
-    ]);
+      const { error } = await supabase.from("study_spot_status").insert([
+        {
+          spot_id: finalSpotId,
+          status: finalStatus,
+          user_id: userId,
+          floor_id: finalFloorId,
+        },
+      ]);
 
-    setSubmitting(false);
+      setSubmitting(false);
 
-    if (error) {
-      console.error("Insert error:", error);
-      Alert.alert("Error", error.message);
-      return;
-    }
+      if (error) {
+        console.error("Insert error:", error);
+        Alert.alert("Error", error.message);
+        return;
+      }
 
-    Alert.alert("Success", `Reported as ${finalStatus}`, [
-      { text: "OK", onPress: () => router.back() },
-    ]);
-  };
+      Alert.alert("Success", `Reported as ${finalStatus}`, [
+        { text: "OK", onPress: () => router.back() },
+      ]);
+    };
 
   return (
     <ScrollView
@@ -182,7 +187,10 @@ export default function SubmitScreen() {
           onValueChange={(value) => setSelectedStatus(value as Status)}
           value={selectedStatus}
         >
-          <TouchableOpacity style={styles.radioOption} onPress={() => setSelectedStatus("empty")}>
+          <TouchableOpacity
+            style={styles.radioOption}
+            onPress={() => setSelectedStatus("empty")}
+          >
             <RadioButton value="empty" />
             <Text style={styles.radioLabel}>Empty</Text>
           </TouchableOpacity>
@@ -190,7 +198,10 @@ export default function SubmitScreen() {
             <RadioButton value="normal" />
             <Text style={styles.radioLabel}>Normal</Text>
           </View> */}
-          <TouchableOpacity style={styles.radioOption} onPress={() => setSelectedStatus("packed")}>
+          <TouchableOpacity
+            style={styles.radioOption}
+            onPress={() => setSelectedStatus("packed")}
+          >
             <RadioButton value="packed" />
             <Text style={styles.radioLabel}>Packed</Text>
           </TouchableOpacity>
