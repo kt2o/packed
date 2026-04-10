@@ -172,7 +172,7 @@ export default function Page() {
 const styles = StyleSheet.create({
   mainBackground: {
     flex: 1,
-    backgroundColor: "#6320c7", // Brand Purple
+    backgroundColor: "#6320c7", // brand Purple
   },
   scrollContainer: {
     flexGrow: 1,

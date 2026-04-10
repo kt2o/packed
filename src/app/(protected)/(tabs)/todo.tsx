@@ -12,7 +12,7 @@ import {
   AppState,
   AppStateStatus,
   Vibration,
-  Alert,
+  Alert
 } from "react-native";
 import DateTimePicker from "@react-native-community/datetimepicker";
 import * as Notifications from "expo-notifications";

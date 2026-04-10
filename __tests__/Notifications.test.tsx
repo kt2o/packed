@@ -1,10 +1,12 @@
-jest.mock('expo-notifications', () => ({
+jest.mock("expo-notifications", () => ({
   setNotificationHandler: jest.fn(),
   getPermissionsAsync: jest.fn(),
   requestPermissionsAsync: jest.fn(),
   getExpoPushTokenAsync: jest.fn(),
   addNotificationReceivedListener: jest.fn(() => ({ remove: jest.fn() })),
-  addNotificationResponseReceivedListener: jest.fn(() => ({ remove: jest.fn() })),
+  addNotificationResponseReceivedListener: jest.fn(() => ({
+    remove: jest.fn(),
+  })),
 }));
 
 import "../src/lib/notifications"; // ensures setNotificationHandler runs
@@ -148,37 +150,37 @@ describe("Notifications Framework — Full Test Suite", () => {
   // ---------------------------------------------------------
 
   it("sets notification handler correctly", () => {
-    const Notifications = require('expo-notifications');
-    require('../src/lib/notifications');
+    const Notifications = require("expo-notifications");
+    require("../src/lib/notifications");
     expect(Notifications.setNotificationHandler).toHaveBeenCalledWith(
-          expect.objectContaining({
-            handleNotification: expect.any(Function),
-          })
-        );
+      expect.objectContaining({
+        handleNotification: expect.any(Function),
+      })
+    );
   });
 
   it("the handler function should return the correct configuration", async () => {
-      const Notifications = require('expo-notifications');
-      require('../src/lib/notifications');
+    const Notifications = require("expo-notifications");
+    require("../src/lib/notifications");
 
-      // Extract the 'handleNotification' function passed to the mock
-      const handlerCall = (Notifications.setNotificationHandler as jest.Mock).mock.calls[0][0];
-      const result = await handlerCall.handleNotification();
+    // Extract the 'handleNotification' function passed to the mock
+    const handlerCall = (Notifications.setNotificationHandler as jest.Mock).mock
+      .calls[0][0];
+    const result = await handlerCall.handleNotification();
 
-      const mockFunc = Notifications.setNotificationHandler;
+    const mockFunc = Notifications.setNotificationHandler;
 
-      // Verify call exists
-      expect(mockFunc).toHaveBeenCalled();
+    // Verify call exists
+    expect(mockFunc).toHaveBeenCalled();
 
-      // Verify the return values of the handler
-      expect(result).toEqual({
-        shouldPlaySound: false,
-        shouldSetBadge: false,
-        shouldShowBanner: true,
-        shouldShowList: true,
-      });
-   });
-
+    // Verify the return values of the handler
+    expect(result).toEqual({
+      shouldPlaySound: false,
+      shouldSetBadge: false,
+      shouldShowBanner: true,
+      shouldShowList: true,
+    });
+  });
 
   // ---------------------------------------------------------
   // 4. LISTENER BEHAVIOR
@@ -188,11 +190,15 @@ describe("Notifications Framework — Full Test Suite", () => {
     const receivedMock = jest.fn();
     const responseMock = jest.fn();
 
-    (Notifications.addNotificationReceivedListener as jest.Mock).mockReturnValue({
+    (
+      Notifications.addNotificationReceivedListener as jest.Mock
+    ).mockReturnValue({
       remove: jest.fn(),
     });
 
-    (Notifications.addNotificationResponseReceivedListener as jest.Mock).mockReturnValue({
+    (
+      Notifications.addNotificationResponseReceivedListener as jest.Mock
+    ).mockReturnValue({
       remove: jest.fn(),
     });
 
@@ -200,7 +206,9 @@ describe("Notifications Framework — Full Test Suite", () => {
     Notifications.addNotificationResponseReceivedListener(responseMock);
 
     expect(Notifications.addNotificationReceivedListener).toHaveBeenCalled();
-    expect(Notifications.addNotificationResponseReceivedListener).toHaveBeenCalled();
+    expect(
+      Notifications.addNotificationResponseReceivedListener
+    ).toHaveBeenCalled();
   });
 
   // ---------------------------------------------------------
@@ -210,7 +218,11 @@ describe("Notifications Framework — Full Test Suite", () => {
   it("saves token to Supabase", async () => {
     mockSupabase.upsert.mockResolvedValue({ data: {}, error: null });
 
-    await saveTokenToSupabase(mockSupabase, "ExponentPushToken[abc123]", "user123");
+    await saveTokenToSupabase(
+      mockSupabase,
+      "ExponentPushToken[abc123]",
+      "user123"
+    );
 
     expect(mockSupabase.from).toHaveBeenCalledWith("user_push_notifications");
     expect(mockSupabase.upsert).toHaveBeenCalledWith({
@@ -225,7 +237,11 @@ describe("Notifications Framework — Full Test Suite", () => {
       error: { message: "Insert failed" },
     });
 
-    await saveTokenToSupabase(mockSupabase, "ExponentPushToken[abc123]", "user123");
+    await saveTokenToSupabase(
+      mockSupabase,
+      "ExponentPushToken[abc123]",
+      "user123"
+    );
 
     expect(mockSupabase.upsert).toHaveBeenCalled();
   });
@@ -258,7 +274,11 @@ describe("Notifications Framework — Full Test Suite", () => {
       error: null,
     });
 
-    await saveTokenToSupabase(mockSupabase, "ExponentPushToken[abc123]", "user123");
+    await saveTokenToSupabase(
+      mockSupabase,
+      "ExponentPushToken[abc123]",
+      "user123"
+    );
 
     expect(mockSupabase.upsert).toHaveBeenCalledTimes(1);
   });

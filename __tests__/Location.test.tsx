@@ -91,9 +91,11 @@ describe("SpotScreen (Location)", () => {
       status: "denied",
     });
 
-    (Location.requestForegroundPermissionsAsync as jest.Mock).mockResolvedValue({
-      status: "denied",
-    });
+    (Location.requestForegroundPermissionsAsync as jest.Mock).mockResolvedValue(
+      {
+        status: "denied",
+      }
+    );
 
     const { getByText } = render(<SpotScreen />);
 
