@@ -1,12 +1,14 @@
 import { useEffect, useState, useCallback, useMemo } from "react";
 import { useFocusEffect, useRouter } from "expo-router";
-import { StyleSheet, ScrollView, RefreshControl, View, Text } from "react-native";
+import { StyleSheet, ScrollView, RefreshControl, View, Text, TouchableOpacity, } from "react-native";
 import { useSupabase } from "../../../lib/supabase-client";
 import React from "react";
 
 import LocationCard from "../../../components/LocationCard";
 import { spots } from "../../../config/studySpots";
 import FloorAccordion from "src/components/FloorAccordion";
+import * as Notifications from "expo-notifications";
+import { useUser } from "@clerk/clerk-expo";
 
 
 function getStatus(count: number, capacity: number) {
@@ -18,13 +20,67 @@ function getStatus(count: number, capacity: number) {
 }
 
 export default function HomeScreen() {
-  const router = useRouter();
-  const supabase = useSupabase();
+
+    const { user } = useUser();
+    const userId = user?.id;
+
+     useEffect(() => {
+       const subscription = Notifications.addNotificationResponseReceivedListener(
+         (response) => {
+           const type = response.notification.request.content.data?.type;
+
+           if (type === "still_here_check") {
+             setShowStillHerePrompt(true);
+           }
+         }
+       );
+
+       return () => subscription.remove();
+     }, []);
+
+     const handleStillHereResponse = async (response: "yes" | "no") => {
+     setShowStillHerePrompt(false);
+
+  const { data: latestRow, error: fetchError } = await supabase
+    .from("study_spot_status")
+    .select("id")
+    .eq("user_id", userId)
+    .order("created_at", { ascending: false })
+    .limit(1)
+    .single();
+
+  if (fetchError || !latestRow) {
+    console.log("No recent row found:", fetchError);
+    return;
+  }
+
+  // 2. Update only that row
+  await supabase
+    .from("study_spot_status")
+    .update({ still_here_response: response })
+    .eq("id", latestRow.id);
+
+  // 3. Optional: auto-checkout if "no"
+  if (response === "no") {
+    await supabase
+      .from("study_spot_status")
+      .update({ checked_out_at: new Date().toISOString() })
+      .eq("id", latestRow.id);
+  }
+
+  };
+
+
+
+    //hooks
+    const router = useRouter();
+    const supabase = useSupabase();
 
     const [spotsWithStatus, setSpotsWithStatus] = useState([]);
     const [spotsWithOpinion, setSpotsWithOpinion] = useState([]);
     const [refreshing, setRefreshing] = useState(false);
     const [expandedSpotId, setExpandedSpotId] = useState<string | null>(null);
+    const [showStillHerePrompt, setShowStillHerePrompt] = useState(false);
 
     const selectedSpotObj = useMemo(() => {
       return spotsWithOpinion.find((s) => s.id === expandedSpotId);
@@ -35,7 +91,7 @@ export default function HomeScreen() {
     const { data: counts, error } = await supabase
       .from("spot_counts")
       .select("*");
-
+    console.log("Capacity:", counts);
     if (error) {
       console.error(error);
       return;
@@ -99,21 +155,28 @@ export default function HomeScreen() {
   useEffect(() => {
       fetchStudySpotStatus();
       fetchOpinion();
+      fetchFloorStatus();
     }, []);
 
     const onRefresh = async () => {
       setRefreshing(true);
-      await Promise.all([fetchStudySpotStatus(), fetchOpinion()]);
+      await Promise.all([
+      fetchStudySpotStatus(),
+      fetchOpinion(),
+      fetchFloorStatus()
+      ]);
       setRefreshing(false);
     };
 
   const [openId, setOpenId] = useState<string | null>(null);
 
   async function fetchOpinion() {
-      const { data } = await supabase
+      const { data, error } = await supabase
         .from("spot_opinion_summary")
-        .select("*");
+        .select("*")
+        .throwOnError();
 
+      console.log("Opinion summary from DB:", data, error);
       const merged = spots.map((spot) => {
         const match = data?.find((o) => o.spot_id === spot.id);
 
@@ -123,6 +186,8 @@ export default function HomeScreen() {
           percentage: match?.percentage ?? 0,
         };
       });
+
+
 
       setSpotsWithOpinion(merged);
     }
@@ -134,6 +199,30 @@ return (
         <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
       }
     >
+    {showStillHerePrompt && (
+      <View style={styles.promptCard}>
+        <Text style={styles.promptText}>Are you still here?</Text>
+
+        <View style={{ flexDirection: "row", gap: 12 }}>
+
+          <TouchableOpacity
+            style={styles.yesButton}
+            onPress={() => handleStillHereResponse("yes")}
+          >
+            <Text style={styles.buttonText}>Yes</Text>
+          </TouchableOpacity>
+
+          <TouchableOpacity
+            style={styles.noButton}
+            onPress={() => handleStillHereResponse("no")}
+          >
+            <Text style={styles.buttonText}>No</Text>
+          </TouchableOpacity>
+
+        </View>
+      </View>
+    )}
+
       {spotsWithStatus.map((spot) => {
         const opinion = spotsWithOpinion.find((o) => o.id === spot.id);
 
@@ -156,10 +245,16 @@ return (
 
             {expandedSpotId === spot.id && selectedSpotObj && (
               <View style={styles.infoCard}>
-                <Text style={styles.infoText}>
-                  {selectedSpotObj.percentage}% of users think this spot is{" "}
-                  {selectedSpotObj.majorityStatus}.
-                </Text>
+                {selectedSpotObj.majorityStatus === "unknown" ? (
+                  <Text style={styles.infoText}>
+                    The status of the spot is currently unavailable.
+                  </Text>
+                ) : (
+                  <Text style={styles.infoText}>
+                    {selectedSpotObj.percentage}% of users think this spot is{" "}
+                    {selectedSpotObj.majorityStatus}.
+                  </Text>
+                )}
               </View>
             )}
 
@@ -168,7 +263,7 @@ return (
               <FloorAccordion
                 isOpen={expandedSpotId === spot.id}
                 floors={spot.floors}
-                statusByFloorId={{}}
+                statusByFloorId={statusByFloorId}
               />
             )}
           </View>
@@ -183,9 +278,49 @@ const styles = StyleSheet.create({
     padding: 16,
     gap: 14,
   },
-infoCard: {
+
+promptCard: {
   backgroundColor: "#fff",
-  padding: 12,
+  padding: 16,
+  borderRadius: 12,
+  marginBottom: 16,
+  shadowColor: "#000",
+  shadowOpacity: 0.1,
+  shadowRadius: 4,
+  elevation: 3,
+  alignItems: "center",
+},
+
+promptText: {
+  fontSize: 18,
+  fontWeight: "700",
+  color: "#6320c7",
+  marginBottom: 12,
+},
+
+yesButton: {
+  backgroundColor: "#7B4DFF",
+  color: "white",
+  paddingVertical: 8,
+  paddingHorizontal: 20,
+  borderRadius: 8,
+  overflow: "hidden",
+  fontWeight: "700",
+},
+
+noButton: {
+  backgroundColor: "#E5E5EA",
+  color: "#333",
+  paddingVertical: 8,
+  paddingHorizontal: 20,
+  borderRadius: 8,
+  overflow: "hidden",
+  fontWeight: "700",
+},
+
+infoCard: {
+  backgroundColor: "#7B4DFF",
+  padding: 10,
   borderRadius: 10,
   marginBottom: 12,
   shadowColor: "#000",
@@ -217,8 +352,10 @@ infoBody: {
 },
 
 infoText: {
-  fontSize: 15,
-  color: "#6A4BCB",
-  marginBottom: 4,
+  fontSize: 14,
+  fontWeight: "700",
+  color: "#fff",
+  textAlign: "center",
+  paddingVertical: 4,
 },
 });

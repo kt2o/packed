@@ -53,7 +53,7 @@ export default function SubmitScreen() {
       // instead of waiting for state to update
       submitToSupabase(id, floorId, status as Status);
     }
-  }, [verified]);
+  }, [verified, id, floorId, status, submitToSupabase]);
 
   const locations = useMemo(() => {
     return spots.map((spot) => ({
@@ -77,27 +77,32 @@ export default function SubmitScreen() {
       setSubmitting(true);
 
       // 1. Check cooldown BEFORE navigating
-      const { data: recent } = await supabase
-        .from("locations")
-        .select("updated_at")
+      const { data: lastCheckin, error } = await supabase
+        .from("study_spot_status")
+        .select("created_at, checked_out_at")
         .eq("user_id", userId)
         .eq("spot_id", selectedSpot)
-        .order("updated_at", { ascending: false })
-        .limit(1);
+        .order("created_at", { ascending: false })
+        .limit(1)
+        .single();
 
-      if (recent && recent.length > 0) {
-        const last = new Date(recent[0].updated_at);
+
+      if (lastCheckin) {
+        const lastTime = new Date(lastCheckin.created_at);
         const now = new Date();
-        const diff = (now - last) / (1000 * 60);
+        const diff = (now - lastTime) / (1000 * 60);
 
-        if (diff < 30) {
+        const isStillCheckedIn = lastCheckin.checked_out_at === null;
+
+        if (isStillCheckedIn && diff < 30) {
           Alert.alert(
             "Check-In Complete",
             `You must wait ${Math.ceil(30 - diff)} more minutes before checking in again.`
           );
-          return; // finally{} will still run
+          return;
         }
       }
+
 
       // 2. Navigate ONLY if allowed
       router.push({
@@ -131,6 +136,8 @@ export default function SubmitScreen() {
           status: finalStatus,
           user_id: userId,
           floor_id: finalFloorId,
+          still_here: false,
+          still_here_at: new Date(Date.now() + 30 * 1000).toISOString()
         },
       ]);
 

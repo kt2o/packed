@@ -57,7 +57,7 @@ async function scheduleDeadlineReminder(
     if (triggerDate > now) {
       await Notifications.scheduleNotificationAsync({
         content: {
-          title: "Task deadline coming up",
+          title: "Task deadline coming up 🗓️",
           body: `"${title}" is due in ${reminder.label}.`,
           data: { deadlineAt, reminder: reminder.label },
         },
