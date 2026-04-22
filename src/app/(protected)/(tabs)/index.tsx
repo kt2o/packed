@@ -1,13 +1,6 @@
 import { useEffect, useState, useCallback, useMemo } from "react";
 import { useFocusEffect, useRouter } from "expo-router";
-
-import {
-  StyleSheet,
-  ScrollView,
-  RefreshControl,
-  View,
-  Text,
-} from "react-native";
+import { StyleSheet, ScrollView, RefreshControl, View, Text } from "react-native";
 import { useSupabase } from "../../../lib/supabase-client";
 import React from "react";
 
@@ -32,9 +25,10 @@ export default function HomeScreen() {
   const [refreshing, setRefreshing] = useState(false);
   const [expandedSpotId, setExpandedSpotId] = useState<string | null>(null);
 
-  const selectedSpotObj = useMemo(() => {
-    return spotsWithOpinion.find((s) => s.id === expandedSpotId);
-  }, [expandedSpotId, spotsWithOpinion]);
+    const selectedSpotObj = useMemo(() => {
+      return spotsWithOpinion.find((s) => s.id === expandedSpotId);
+    }, [expandedSpotId, spotsWithOpinion]);
+
 
   async function fetchStudySpotStatus() {
     const { data: counts, error } = await supabase

@@ -4,11 +4,11 @@ module.exports = {
   roots: ["<rootDir>/src", "<rootDir>/__tests__"],
   setupFiles: ["<rootDir>/jest.setup.tsx"],
   moduleNameMapper: {
-      "^src/(.*)$": "<rootDir>/src/$1"
+      "\\.(png|jpg|jpeg|gif|svg)$": "<rootDir>/__mocks__/fileMock.js"
     },
   restoreMocks: true,
   clearMocks: true,
   transformIgnorePatterns: [
-    "node_modules/(?!(@react-native|react-native|expo|expo-modules-core)/)"
-  ]
+      "node_modules/(?!react-native|react-native-element-dropdown|expo|@expo|@react-native|@clerk)"
+    ],
 };

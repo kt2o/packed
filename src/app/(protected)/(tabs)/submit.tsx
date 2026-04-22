@@ -1,5 +1,4 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
-
 import { useSupabase } from "../../../lib/supabase-client";
 import type { Status } from "../../../types/status";
 import { useFocusEffect, useLocalSearchParams, useRouter } from "expo-router";
@@ -24,7 +23,6 @@ export default function SubmitScreen() {
   const supabase = useSupabase();
 
   const userId = user?.id;
-
   const { verified, id, floorId, status } = useLocalSearchParams<{
     verified: string;
     id?: string;
@@ -120,49 +118,35 @@ export default function SubmitScreen() {
     }
   };
 
-  const submitToSupabase = async (
-    passedId?: string,
-    passedFloorId?: string,
-    passedStatus?: Status
-  ) => {
-    router.push({
-      pathname: "/spot/[id]",
-      params: {
-        id: selectedSpot,
-        floorId: selectedFloor,
-        status: selectedStatus,
-        returnTo: "submit",
-      },
-    });
+  const submitToSupabase = async (passedId?: string, passedFloorId?: string, passedStatus?: Status) => {
+      const userId = user.id;
 
-    const userId = user.id;
+      // Use the passed arguments OR the state as a fallback
+      const finalSpotId = passedId || selectedSpot;
+      const finalFloorId = passedFloorId || selectedFloor;
+      const finalStatus = passedStatus || selectedStatus;
 
-    // Use the passed arguments OR the state as a fallback
-    const finalSpotId = passedId || selectedSpot;
-    const finalFloorId = passedFloorId || selectedFloor;
-    const finalStatus = passedStatus || selectedStatus;
+      const { error } = await supabase.from("study_spot_status").insert([
+        {
+          spot_id: finalSpotId,
+          status: finalStatus,
+          user_id: userId,
+          floor_id: finalFloorId,
+        },
+      ]);
 
-    const { error } = await supabase.from("study_spot_status").insert([
-      {
-        spot_id: finalSpotId,
-        status: finalStatus,
-        user_id: userId,
-        floor_id: finalFloorId,
-      },
-    ]);
+      setSubmitting(false);
 
-    setSubmitting(false);
+      if (error) {
+        console.error("Insert error:", error);
+        Alert.alert("Error", error.message);
+        return;
+      }
 
-    if (error) {
-      console.error("Insert error:", error);
-      Alert.alert("Error", error.message);
-      return;
-    }
-
-    Alert.alert("Success", `Reported as ${finalStatus}`, [
-      { text: "OK", onPress: () => router.back() },
-    ]);
-  };
+      Alert.alert("Success", `Reported as ${finalStatus}`, [
+        { text: "OK", onPress: () => router.back() },
+      ]);
+    };
 
   return (
     <ScrollView
