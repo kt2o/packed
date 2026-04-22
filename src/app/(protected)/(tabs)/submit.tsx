@@ -43,14 +43,9 @@ export default function SubmitScreen() {
 
   useEffect(() => {
     if (verified === "true") {
-      // 1. Sync the UI state (for the form display)
-      console.log("URL Params received:", { id, floorId, status });
       if (id) setSelectedSpot(String(id));
       if (floorId) setSelectedFloor(String(floorId));
       if (status) setSelectedStatus(status as Status);
-
-      // 2. Pass the params DIRECTLY to the function
-      // instead of waiting for state to update
       submitToSupabase(id, floorId, status as Status);
     }
   }, [verified, id, floorId, status, submitToSupabase]);
@@ -75,9 +70,7 @@ export default function SubmitScreen() {
 
     try {
       setSubmitting(true);
-
-      // 1. Check cooldown BEFORE navigating
-      const { data: lastCheckin, error } = await supabase
+      const { data: lastCheckin } = await supabase
         .from("study_spot_status")
         .select("created_at, checked_out_at")
         .eq("user_id", userId)
@@ -86,27 +79,21 @@ export default function SubmitScreen() {
         .limit(1)
         .single();
 
-
       if (lastCheckin) {
         const lastTime = new Date(lastCheckin.created_at);
         const now = new Date();
-        const diff = (now - lastTime) / (1000 * 60);
-
+        const diff = (now.getTime() - lastTime.getTime()) / (1000 * 60);
         const isStillCheckedIn = lastCheckin.checked_out_at === null;
 
         if (isStillCheckedIn && diff < 30) {
           Alert.alert(
             "Check-In Complete",
-            `You must wait ${Math.ceil(
-              30 - diff
-            )} more minutes before checking in again.`
+            `You must wait ${Math.ceil(30 - diff)} more minutes.`
           );
           return;
         }
       }
 
-
-      // 2. Navigate ONLY if allowed
       router.push({
         pathname: "/spot/[id]",
         params: {
@@ -117,114 +104,114 @@ export default function SubmitScreen() {
         },
       });
     } finally {
-      // 3. ALWAYS reset submitting
       setSubmitting(false);
-      console.log("Done submitting");
     }
   };
 
-  const submitToSupabase = async (passedId?: string, passedFloorId?: string, passedStatus?: Status) => {
-      const userId = user.id;
+  const submitToSupabase = async (
+    passedId?: string,
+    passedFloorId?: string,
+    passedStatus?: Status
+  ) => {
+    const finalSpotId = passedId || selectedSpot;
+    const finalFloorId = passedFloorId || selectedFloor;
+    const finalStatus = passedStatus || selectedStatus;
 
-      // Use the passed arguments OR the state as a fallback
-      const finalSpotId = passedId || selectedSpot;
-      const finalFloorId = passedFloorId || selectedFloor;
-      const finalStatus = passedStatus || selectedStatus;
+    const { error } = await supabase.from("study_spot_status").insert([
+      {
+        spot_id: finalSpotId,
+        status: finalStatus,
+        user_id: user.id,
+        floor_id: finalFloorId,
+        still_here: false,
+        still_here_at: new Date(Date.now() + 30 * 1000).toISOString(),
+      },
+    ]);
 
-      const { error } = await supabase.from("study_spot_status").insert([
-        {
-          spot_id: finalSpotId,
-          status: finalStatus,
-          user_id: userId,
-          floor_id: finalFloorId,
-          still_here: false,
-          still_here_at: new Date(Date.now() + 30 * 1000).toISOString()
-        },
-      ]);
+    setSubmitting(false);
 
-      setSubmitting(false);
+    if (error) {
+      Alert.alert("Error", error.message);
+      return;
+    }
 
-      if (error) {
-        console.error("Insert error:", error);
-        Alert.alert("Error", error.message);
-        return;
-      }
-
-      Alert.alert("Success", `Reported as ${finalStatus}`, [
-        { text: "OK", onPress: () => router.back() },
-      ]);
-    };
+    Alert.alert("Success", `Reported as ${finalStatus}`, [
+      { text: "OK", onPress: () => router.back() },
+    ]);
+  };
 
   return (
     <ScrollView
       style={styles.container}
       contentContainerStyle={styles.scrollView}
     >
-      <Text style={styles.title}>Study Location Status</Text>
-      <LocationDropDown
-        label={"Location"}
-        data={locations}
-        value={selectedSpot}
-        onChange={setSelectedSpot}
-        placeholder="Where are you?"
-      ></LocationDropDown>
+      <View style={styles.formCard}>
+        <Text style={styles.title}>Update Status</Text>
 
-      {floors.length > 0 && (
-        <View style={styles.inputContainer}>
-          <Text style={styles.label}>Which floor are you on?</Text>
+        <View style={styles.inputGroup}>
+          <LocationDropDown
+            label={"Location"}
+            data={locations}
+            value={selectedSpot}
+            onChange={setSelectedSpot}
+            placeholder="Where are you?"
+          />
+        </View>
+
+        {floors.length > 0 && (
+          <View style={styles.inputGroup}>
+            <Text style={styles.label}>Which floor are you on?</Text>
+            <RadioButton.Group
+              onValueChange={(value) => setSelectedFloor(value)}
+              value={selectedFloor}
+            >
+              {floors.map((floor) => (
+                <TouchableOpacity
+                  key={floor.id}
+                  style={styles.radioOption}
+                  onPress={() => setSelectedFloor(floor.id)}
+                >
+                  <RadioButton.Android value={floor.id} color="#7C3AED" />
+                  <Text style={styles.radioLabel}>{floor.displayName}</Text>
+                </TouchableOpacity>
+              ))}
+            </RadioButton.Group>
+          </View>
+        )}
+
+        <View style={styles.inputGroup}>
+          <Text style={styles.label}>How busy is it?</Text>
           <RadioButton.Group
-            onValueChange={(value) => setSelectedFloor(value)}
-            value={selectedFloor}
+            onValueChange={(value) => setSelectedStatus(value as Status)}
+            value={selectedStatus}
           >
-            {floors.map((floor) => (
-              <TouchableOpacity
-                key={floor.id}
-                style={styles.radioOption}
-                onPress={() => setSelectedFloor(floor.id)}
-              >
-                <RadioButton value={floor.id} />
-                <Text style={styles.radioLabel}>{floor.displayName}</Text>
-              </TouchableOpacity>
-            ))}
+            <TouchableOpacity
+              style={styles.radioOption}
+              onPress={() => setSelectedStatus("empty")}
+            >
+              <RadioButton.Android value="empty" color="#7C3AED" />
+              <Text style={styles.radioLabel}>Empty</Text>
+            </TouchableOpacity>
+            <TouchableOpacity
+              style={styles.radioOption}
+              onPress={() => setSelectedStatus("packed")}
+            >
+              <RadioButton.Android value="packed" color="#7C3AED" />
+              <Text style={styles.radioLabel}>Packed</Text>
+            </TouchableOpacity>
           </RadioButton.Group>
         </View>
-      )}
-      <View style={styles.inputContainer}>
-        <Text style={styles.label}>How busy is this location?</Text>
-        <RadioButton.Group
-          onValueChange={(value) => setSelectedStatus(value as Status)}
-          value={selectedStatus}
-        >
-          <TouchableOpacity
-            style={styles.radioOption}
-            onPress={() => setSelectedStatus("empty")}
-          >
-            <RadioButton value="empty" />
-            <Text style={styles.radioLabel}>Empty</Text>
-          </TouchableOpacity>
-          {/* <View style={styles.radioOption}>
-            <RadioButton value="normal" />
-            <Text style={styles.radioLabel}>Normal</Text>
-          </View> */}
-          <TouchableOpacity
-            style={styles.radioOption}
-            onPress={() => setSelectedStatus("packed")}
-          >
-            <RadioButton value="packed" />
-            <Text style={styles.radioLabel}>Packed</Text>
-          </TouchableOpacity>
-        </RadioButton.Group>
-      </View>
 
-      <TouchableOpacity
-        style={[styles.button, submitting && styles.buttonDisabled]}
-        onPress={() => handleSubmit()}
-        disabled={submitting}
-      >
-        <Text style={styles.buttonText}>
-          {submitting ? "Submitting..." : "Submit"}
-        </Text>
-      </TouchableOpacity>
+        <TouchableOpacity
+          style={[styles.button, submitting && styles.buttonDisabled]}
+          onPress={() => handleSubmit()}
+          disabled={submitting}
+        >
+          <Text style={styles.buttonText}>
+            {submitting ? "Submitting..." : "Submit"}
+          </Text>
+        </TouchableOpacity>
+      </View>
     </ScrollView>
   );
 }
@@ -232,66 +219,67 @@ export default function SubmitScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: "#f5f5f5",
+    backgroundColor: "#F9FAFB",
   },
   scrollView: {
     padding: 20,
+    justifyContent: "center",
+  },
+  formCard: {
+    backgroundColor: "#FFFFFF",
+    padding: 24,
+    borderRadius: 24,
+    shadowColor: "#2E1065",
+    shadowOffset: { width: 0, height: 10 },
+    shadowOpacity: 0.08,
+    shadowRadius: 20,
+    elevation: 5,
   },
   title: {
-    fontSize: 28,
-    fontWeight: "bold",
+    fontSize: 24,
+    fontWeight: "800",
     marginBottom: 24,
-    color: "#333",
+    color: "#1F1637",
+    textAlign: "center",
   },
-  form: {
-    backgroundColor: "white",
-    padding: 20,
-    borderRadius: 12,
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 3,
-  },
-  inputContainer: {
-    marginBottom: 20,
+  inputGroup: {
+    marginBottom: 24,
   },
   label: {
-    fontSize: 16,
+    fontSize: 14,
     fontWeight: "600",
-    marginBottom: 8,
-    color: "#333",
-  },
-  input: {
-    borderWidth: 1,
-    borderColor: "#ddd",
-    borderRadius: 8,
-    padding: 12,
-    fontSize: 16,
-    backgroundColor: "#fff",
+    marginBottom: 12,
+    color: "#413A5F",
   },
   radioOption: {
     flexDirection: "row",
     alignItems: "center",
-    marginBottom: 8,
+    marginBottom: 12,
   },
   radioLabel: {
     fontSize: 16,
-    color: "#333",
+    color: "#1F1637",
+    marginLeft: 8,
   },
   button: {
-    backgroundColor: "#007AFF",
-    padding: 16,
-    borderRadius: 8,
+    backgroundColor: "#7C3AED",
+    paddingVertical: 16,
+    borderRadius: 16,
     alignItems: "center",
-    marginTop: 10,
+    marginTop: 8,
+    shadowColor: "#7C3AED",
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.2,
+    shadowRadius: 8,
+    elevation: 4,
   },
   buttonText: {
-    color: "white",
-    fontSize: 18,
-    fontWeight: "600",
+    color: "#FFFFFF",
+    fontSize: 16,
+    fontWeight: "700",
   },
   buttonDisabled: {
-    opacity: 0.6,
+    backgroundColor: "#C4B5FD",
+    opacity: 0.8,
   },
 });

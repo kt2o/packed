@@ -17,7 +17,7 @@ import { registerForPushNotificationsAsync, saveTokenToSupabase } from "src/lib/
 Notifications.setNotificationHandler({
   handleNotification: async () => ({
     shouldShowAlert: true,
-    shouldPlaySound: false,
+    shouldPlaySound: true,
     shouldSetBadge: false,
   }),
 });

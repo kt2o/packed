@@ -48,7 +48,8 @@ export default function Page() {
       "errors" in err &&
       Array.isArray((err as { errors?: Array<{ message?: string }> }).errors)
     ) {
-      const first = (err as { errors?: Array<{ message?: string }> }).errors?.[0];
+      const first = (err as { errors?: Array<{ message?: string }> })
+        .errors?.[0];
       if (first?.message) return first.message;
     }
 
@@ -84,7 +85,9 @@ export default function Page() {
           });
           setShowEmailCode(true);
         } else {
-          setErrorMessage("A second factor is required, but email code is unavailable.");
+          setErrorMessage(
+            "A second factor is required, but email code is unavailable."
+          );
         }
       } else {
         setErrorMessage("Sign-in could not be completed.");
@@ -207,9 +210,9 @@ export default function Page() {
                   style={({ pressed }) => [
                     styles.primaryButton,
                     (pressed || isSubmitting || code.length !== 6) &&
-                    styles.primaryButtonPressed,
+                      styles.primaryButtonPressed,
                     (isSubmitting || code.length !== 6) &&
-                    styles.primaryButtonDisabled,
+                      styles.primaryButtonDisabled,
                   ]}
                   onPress={onVerifyPress}
                   disabled={isSubmitting || code.length !== 6}
@@ -302,7 +305,7 @@ export default function Page() {
                   styles.primaryButton,
                   (pressed || isSubmitting) && styles.primaryButtonPressed,
                   (!identifier || !password || isSubmitting) &&
-                  styles.primaryButtonDisabled,
+                    styles.primaryButtonDisabled,
                 ]}
                 onPress={onSignInPress}
                 disabled={!identifier || !password || isSubmitting}
@@ -331,7 +334,6 @@ export default function Page() {
 const styles = StyleSheet.create({
   flex: {
     flex: 1,
-    backgroundColor: "#6320c7", // brand Purple
   },
   safeArea: {
     flex: 1,
