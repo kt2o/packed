@@ -331,6 +331,7 @@ export default function Page() {
 const styles = StyleSheet.create({
   flex: {
     flex: 1,
+    backgroundColor: "#6320c7", // brand Purple
   },
   safeArea: {
     flex: 1,

@@ -38,7 +38,7 @@ export default function SubmitScreen() {
   useFocusEffect(
     useCallback(() => {
       setSubmitting(false);
-    }, []),
+    }, [])
   );
 
   useEffect(() => {
@@ -64,7 +64,7 @@ export default function SubmitScreen() {
 
   const floors = useMemo(
     () => spots.find((s) => s.id === selectedSpot)?.floors ?? [],
-    [selectedSpot],
+    [selectedSpot]
   );
 
   const handleSubmit = async () => {
@@ -97,7 +97,9 @@ export default function SubmitScreen() {
         if (isStillCheckedIn && diff < 30) {
           Alert.alert(
             "Check-In Complete",
-            `You must wait ${Math.ceil(30 - diff)} more minutes before checking in again.`
+            `You must wait ${Math.ceil(
+              30 - diff
+            )} more minutes before checking in again.`
           );
           return;
         }
@@ -114,7 +116,6 @@ export default function SubmitScreen() {
           returnTo: "submit",
         },
       });
-
     } finally {
       // 3. ALWAYS reset submitting
       setSubmitting(false);

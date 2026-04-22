@@ -10,7 +10,6 @@ import FloorAccordion from "src/components/FloorAccordion";
 import * as Notifications from "expo-notifications";
 import { useUser } from "@clerk/clerk-expo";
 
-
 function getStatus(count: number, capacity: number) {
   const ratio = count / capacity;
   if (ratio >= 1) return "full";
@@ -76,11 +75,18 @@ export default function HomeScreen() {
     const router = useRouter();
     const supabase = useSupabase();
 
+<<<<<<< HEAD
     const [spotsWithStatus, setSpotsWithStatus] = useState([]);
     const [spotsWithOpinion, setSpotsWithOpinion] = useState([]);
     const [refreshing, setRefreshing] = useState(false);
     const [expandedSpotId, setExpandedSpotId] = useState<string | null>(null);
     const [showStillHerePrompt, setShowStillHerePrompt] = useState(false);
+=======
+  const [spotsWithStatus, setSpotsWithStatus] = useState([]);
+  const [spotsWithOpinion, setSpotsWithOpinion] = useState([]);
+  const [refreshing, setRefreshing] = useState(false);
+  const [expandedSpotId, setExpandedSpotId] = useState<string | null>(null);
+>>>>>>> origin/clean-submit-UI
 
     const selectedSpotObj = useMemo(() => {
       return spotsWithOpinion.find((s) => s.id === expandedSpotId);
@@ -98,9 +104,7 @@ export default function HomeScreen() {
     }
 
     const merged = spots.map((spot) => {
-      const count =
-        counts?.find((c) => c.spot_id === spot.id)?.user_count ?? 0;
-
+      const count = counts?.find((c) => c.spot_id === spot.id)?.user_count ?? 0;
 
       return {
         ...spot,
@@ -118,9 +122,9 @@ export default function HomeScreen() {
   >(() =>
     Object.fromEntries(
       spots.flatMap((s) =>
-        (s.floors ?? []).map((f) => [f.id, "unknown" as string]),
-      ),
-    ),
+        (s.floors ?? []).map((f) => [f.id, "unknown" as string])
+      )
+    )
   );
   async function fetchFloorStatus() {
     const { data, error } = await supabase
@@ -143,14 +147,12 @@ export default function HomeScreen() {
 
       if (!latestFloor[floorId]) {
         latestFloor[floorId] =
-          status === "empty" || status === "packed"
-            ? status
-            : "unknown";
+          status === "empty" || status === "packed" ? status : "unknown";
       }
     }
 
     setStatusByFloorId((prev) => ({ ...prev, ...latestFloor }));
-  };
+  }
 
   useEffect(() => {
       fetchStudySpotStatus();
@@ -168,9 +170,20 @@ export default function HomeScreen() {
       setRefreshing(false);
     };
 
+    fetchStudySpotStatus();
+    fetchOpinion();
+  }, []);
+
+  const onRefresh = async () => {
+    setRefreshing(true);
+    await Promise.all([fetchStudySpotStatus(), fetchOpinion()]);
+    setRefreshing(false);
+  };
+
   const [openId, setOpenId] = useState<string | null>(null);
 
   async function fetchOpinion() {
+
       const { data, error } = await supabase
         .from("spot_opinion_summary")
         .select("*")
@@ -180,19 +193,30 @@ export default function HomeScreen() {
       const merged = spots.map((spot) => {
         const match = data?.find((o) => o.spot_id === spot.id);
 
-        return {
-          ...spot,
-          majorityStatus: match?.majority_status ?? "unknown",
-          percentage: match?.percentage ?? 0,
-        };
-      });
+    const { data } = await supabase.from("spot_opinion_summary").select("*");
+
+    const merged = spots.map((spot) => {
+      const match = data?.find((o) => o.spot_id === spot.id);
+
+
+      return {
+        ...spot,
+        majorityStatus: match?.majority_status ?? "unknown",
+        percentage: match?.percentage ?? 0,
+      };
+    });
+
 
 
 
       setSpotsWithOpinion(merged);
     }
 
-return (
+    setSpotsWithOpinion(merged);
+  }
+
+
+  return (
     <ScrollView
       contentContainerStyle={styles.container}
       refreshControl={
@@ -237,9 +261,7 @@ return (
               capacity={spot.capacity}
               percentage={Math.round((spot.count / spot.capacity) * 100)}
               onPress={() =>
-                setExpandedSpotId((prev) =>
-                  prev === spot.id ? null : spot.id
-                )
+                setExpandedSpotId((prev) => (prev === spot.id ? null : spot.id))
               }
             />
 
@@ -257,7 +279,6 @@ return (
                 )}
               </View>
             )}
-
 
             {spot.floors && (
               <FloorAccordion
@@ -278,6 +299,7 @@ const styles = StyleSheet.create({
     padding: 16,
     gap: 14,
   },
+
 
 promptCard: {
   backgroundColor: "#fff",
@@ -329,27 +351,27 @@ infoCard: {
   elevation: 3,
 },
 
-infoHeader: {
-  flexDirection: "row",
-  justifyContent: "space-between",
-  alignItems: "center",
-},
+  infoHeader: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+  },
 
-infoTitle: {
-  fontSize: 18,
-  fontWeight: "700",
-  color: "#333",
-},
+  infoTitle: {
+    fontSize: 18,
+    fontWeight: "700",
+    color: "#333",
+  },
 
-dots: {
-  fontSize: 22,
-  paddingHorizontal: 8,
-  paddingVertical: 4,
-},
+  dots: {
+    fontSize: 22,
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+  },
 
-infoBody: {
-  marginTop: 10,
-},
+  infoBody: {
+    marginTop: 10,
+  },
 
 infoText: {
   fontSize: 14,
@@ -359,3 +381,4 @@ infoText: {
   paddingVertical: 4,
 },
 });
+

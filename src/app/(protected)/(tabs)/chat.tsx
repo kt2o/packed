@@ -123,6 +123,34 @@ export default function ChatScreen() {
       )
       .subscribe();
 
+    // loctcation check
+    const verifyAccess = async () => {
+      // 1. Create a timestamp for 2 hours ago
+      const twoHoursAgo = new Date(
+        Date.now() - 2 * 60 * 60 * 1000
+      ).toISOString();
+
+      const { data, error } = await supabase
+        .from("check_ins")
+        .select("spot_id, updated_at")
+        .eq("user_id", userId)
+        .order("updated_at", { ascending: false }) // Get the absolute newest one
+        .limit(1)
+        .maybeSingle();
+
+      if (data && data.updated_at > twoHoursAgo) {
+        // If their latest check-in matches THIS page's spot ID, they are in!
+        if (data.spot_id === currentPageSpotId) {
+          setIsVerified(true);
+        } else {
+          setIsVerified(false); // They are checked in somewhere else
+        }
+      } else {
+        setIsVerified(false); // No recent check-in found
+      }
+      setLoading(false);
+    };
+
     return () => {
       isMounted = false;
       supabase.removeChannel(channel);
