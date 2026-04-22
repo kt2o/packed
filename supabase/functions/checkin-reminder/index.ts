@@ -24,14 +24,12 @@ const cutoff = new Date(Date.now() - 30 * 1000).toISOString(); // 30 seconds for
   console.log("Cutoff:", cutoff);
 
 // 1. Find check-ins older than cutoff
-  const { data: due, error } = await supabase
-.from("study_spot_status")
-.select("id, user_id, created_at, reminder_sent")
-.lte("created_at", cutoff)
-.or("reminder_sent.is.null,reminder_sent.eq.false");
+const { data: due, error } = await supabase.rpc("get_due_reminders");
 
-if (error) console.error("Error fetching due:", error);
-console.log("Due rows:", JSON.stringify(due, null, 2));
+if (error) {
+console.error("RPC error:", error);
+return new Response("ok", { status: 200 });
+}
 
 if (!due || due.length === 0) {
 console.log("No due rows.");
@@ -45,7 +43,9 @@ console.log("Processing row:", row);
 const { data: tokenRows, error: tokenError } = await supabase
 .from("user_push_notifications")
 .select("expo_push_token")
-.eq("user_id", row.user_id);
+.eq("user_id", row.user_id)
+.order("updated_at", { ascending: false })
+.limit(1);
 
 if (tokenError) {
 console.error("Error fetching tokens:", tokenError);
@@ -65,15 +65,15 @@ if (!token.expo_push_token) {
 console.log("Skipping invalid token:", token);
 continue;
 }
-
-console.log("Sending push to:", token.expo_push_token);
+const expoToken = tokenRows[0].expo_push_token;
+console.log("Sending push to:", expoToken);
 
 const pushRes = await fetch("https://exp.host/--/api/v2/push/send", {
 method: "POST",
 headers: { "Content-Type": "application/json" },
 body: JSON.stringify([
 {
-to: token.expo_push_token,
+to: expoToken,
 title: "Don't Lose Your Streak ‼️ ",
 body: "Time to get back to studying🧑‍💻",
 },

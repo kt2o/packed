@@ -5,7 +5,7 @@ public: true,
 };
 
 import { serve } from "https://deno.land/std/http/server.ts";
-import { createClient } from "https://esm.sh/@supabase/supabase-js";
+import { createClient } from "npm:@supabase/supabase-js@2";
 
 serve(async (req) => {
 if (req.method !== "POST") {
@@ -18,28 +18,17 @@ Deno.env.get("EXPO_PUBLIC_SUPABASE_URL")!,
 Deno.env.get("EXPO_PUBLIC_SUPABASE_SERVICE_ROLE")!
 );
 
-// 1. Calculate the 48-hour window
-const now = new Date();
-// 48 hours from now
-const startWindow = new Date(now.getTime() + (48 * 60 * 60 * 1000)).toISOString();
-// 49 hours from now (to catch everything in a 1-hour cron cycle)
-const endWindow = new Date(now.getTime() + (49 * 60 * 60 * 1000)).toISOString();
 
-console.log(`Checking deadlines between ${startWindow} and ${endWindow}`);
 
 // 2. Fetch rows within that specific 48-hour-out window
-const { data: due, error } = await supabase
-.from("todo_list")
-.select("id, user_id, title, is_completed, deadline_at")
-.eq("is_completed", false) // Filter for incomplete
-  .gte("deadline_at", startWindow) // Deadline is at least 48h away
-  .lte("deadline_at", endWindow)   // But no more than 49h away
-  .is("reminder_sent.is.null,reminder_sent.eq.false");
+const { data: due, error } = await supabase.rpc("get_due_todo_reminders");
 
 if (error) {
-console.error("Error fetching due rows:", error);
-return new Response("Error", { status: 500 });
+console.error("RPC error:", error);
+return new Response("ok", { status: 200 });
 }
+
+console.log("Due tasks:", due);
 
 if (!due || due.length === 0) {
 console.log("No due rows.");
@@ -53,7 +42,9 @@ console.log("Processing row:", row);
 const { data: tokenRows, error: tokenError } = await supabase
 .from("user_push_notifications")
 .select("expo_push_token")
-.eq("user_id", row.user_id);
+.eq("user_id", row.user_id)
+.order("updated_at", { ascending: false })
+.limit(1);
 
 if (tokenError) {
 console.error("Error fetching tokens:", tokenError);
@@ -79,13 +70,14 @@ console.log("Sending push to:", token.expo_push_token);
 const pushRes = await fetch("https://exp.host/--/api/v2/push/send", {
 method: "POST",
 headers: { "Content-Type": "application/json" },
-body: JSON.stringify([
-{
+body: JSON.stringify({
 to: token.expo_push_token,
 title: "You have task coming up",
 body: "Time to get to work ⏰",
+data: {
+route: "todo"
 },
-]),
+}),
 });
 
 console.log("Expo push response status:", pushRes.status);

@@ -8,9 +8,19 @@ import {
 import { tokenCache } from "@clerk/clerk-expo/token-cache";
 import { useAuth } from "@clerk/clerk-expo";
 import { SupabaseProvider } from "src/providers/SupabaseProvider";
+import * as Notifications from 'expo-notifications';
+import { useRouter, useLocalSearchParams } from "expo-router";
 
 import { useEffect } from 'react';
 import { registerForPushNotificationsAsync, saveTokenToSupabase } from "src/lib/notifications";
+
+Notifications.setNotificationHandler({
+  handleNotification: async () => ({
+    shouldShowAlert: true,
+    shouldPlaySound: false,
+    shouldSetBadge: false,
+  }),
+});
 
 
 
@@ -38,11 +48,28 @@ function RootStack() {
 
 
 export default function RootLayout() {
+  const router = useRouter();
+  useEffect(() => {
+      const sub = Notifications.addNotificationResponseReceivedListener(
+        (response) => {
+          const route = response.notification.request.content.data?.route;
+
+          if (route === "todo") {
+            router.replace("/(protected)/(tabs)/todo");
+          }
+
+        }
+      );
+
+      return () => sub.remove();
+    }, []);
+
   useEffect(() => {
     registerForPushNotificationsAsync().then(token => {
       saveTokenToSupabase(token);
     });
   }, []);
+
   return (
     <ClerkProvider tokenCache={tokenCache}>
       <SupabaseProvider>

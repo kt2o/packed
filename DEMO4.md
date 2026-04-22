@@ -70,7 +70,7 @@
 ## AI Assistance 
 * AI tools used:
     * Claude.
-    * Microsoft Copilot.
+    * Copilot.
     * Gemini.
     * ChatGPT.
 
