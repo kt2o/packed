@@ -21,7 +21,7 @@ function RootStack() {
   const { user } = useUser();
   const supabase = useSupabase();
 
-  // ⭐ Save token ONLY after Clerk is loaded and user is signed in
+  
   useEffect(() => {
     if (!isLoaded || !isSignedIn || !user) return;
 
@@ -66,7 +66,10 @@ export default function RootLayout() {
   }, []);
 
   return (
-    <ClerkProvider tokenCache={tokenCache}>
+    <ClerkProvider
+    publishableKey={process.env.EXPO_PUBLIC_CLERK_PUBLISHABLE_KEY}
+    tokenCache={tokenCache}
+    >
       <SupabaseProvider>
         <RootStack />
       </SupabaseProvider>
