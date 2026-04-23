@@ -7,6 +7,7 @@ import {
   View,
   Text,
   TouchableOpacity,
+  Platform
 } from "react-native";
 import { useSupabase } from "../../../lib/supabase-client";
 import React from "react";
@@ -29,19 +30,21 @@ export default function HomeScreen() {
   const { user } = useUser();
   const userId = user?.id;
 
-  useEffect(() => {
-    const subscription = Notifications.addNotificationResponseReceivedListener(
-      (response) => {
-        const type = response.notification.request.content.data?.type;
+useEffect(() => {
+  if (Platform.OS === "web") return;
 
-        if (type === "still_here_check") {
-          setShowStillHerePrompt(true);
-        }
+  const subscription = Notifications.addNotificationResponseReceivedListener(
+    (response) => {
+      const type = response.notification.request.content.data?.type;
+
+      if (type === "still_here_check") {
+        setShowStillHerePrompt(true);
       }
-    );
+    }
+  );
 
-    return () => subscription.remove();
-  }, []);
+  return () => subscription.remove();
+}, []);
 
   const handleStillHereResponse = async (response: "yes" | "no") => {
     setShowStillHerePrompt(false);

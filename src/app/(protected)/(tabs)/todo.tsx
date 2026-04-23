@@ -15,8 +15,8 @@ import {
   Alert
 } from "react-native";
 import DateTimePicker from "@react-native-community/datetimepicker";
-import * as Notifications from "expo-notifications";
 import PomodoroTimer from "../../../components/PomodoroTimer";
+
 
 type Todo = {
   id: string;
@@ -27,48 +27,6 @@ type Todo = {
   deadline_at: string | null;
 };
 
-Notifications.setNotificationHandler({
-  handleNotification: async () => ({
-    shouldShowBanner: true,
-    shouldShowList: true,
-    shouldPlaySound: false,
-    shouldSetBadge: false,
-  }),
-});
-
-async function scheduleDeadlineReminder(
-  title: string,
-  deadlineAt: string | null
-) {
-  if (!deadlineAt) return;
-
-  const deadlineDate = new Date(deadlineAt);
-  const now = new Date();
-
-  const reminderOffsets = [
-    { label: "1 week", ms: 7 * 24 * 60 * 60 * 1000 },
-    { label: "3 days", ms: 3 * 24 * 60 * 60 * 1000 },
-    { label: "1 day", ms: 1 * 24 * 60 * 60 * 1000 },
-  ];
-
-  for (const reminder of reminderOffsets) {
-    const triggerDate = new Date(deadlineDate.getTime() - reminder.ms);
-
-    if (triggerDate > now) {
-      await Notifications.scheduleNotificationAsync({
-        content: {
-          title: "Task deadline coming up 🗓️",
-          body: `"${title}" is due in ${reminder.label}.`,
-          data: { deadlineAt, reminder: reminder.label },
-        },
-        trigger: {
-          type: Notifications.SchedulableTriggerInputTypes.DATE,
-          date: triggerDate,
-        },
-      });
-    }
-  }
-}
 
 function getDeadlineStatus(deadlineAt: string | null) {
   if (!deadlineAt) return "none";

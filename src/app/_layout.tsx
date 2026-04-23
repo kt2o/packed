@@ -7,31 +7,37 @@ import * as Notifications from 'expo-notifications';
 import { useEffect } from 'react';
 import { registerForPushNotificationsAsync, saveTokenToSupabase } from "src/lib/notifications";
 import { useRouter } from "expo-router";
+import { Platform } from "react-native";
 
-Notifications.setNotificationHandler({
-  handleNotification: async () => ({
-    shouldShowAlert: true,
-    shouldPlaySound: true,
-    shouldSetBadge: false,
-  }),
-});
+if (Platform.OS !== "web") {
+  Notifications.setNotificationHandler({
+    handleNotification: async () => ({
+      shouldShowAlert: true,
+      shouldPlaySound: true,
+      shouldSetBadge: false,
+    }),
+  });
+}
+
 
 function RootStack() {
   const { isSignedIn, isLoaded } = useAuth();
   const { user } = useUser();
   const supabase = useSupabase();
 
-  
-  useEffect(() => {
-    if (!isLoaded || !isSignedIn || !user) return;
+  // Save token ONLY after Clerk is loaded and user is signed in
+ useEffect(() => {
+  if (Platform.OS === "web") return;
+  if (!isLoaded || !isSignedIn || !user) return;
 
-    (async () => {
-      const token = await registerForPushNotificationsAsync();
-      if (token) {
-        await saveTokenToSupabase(supabase, token, user.id);
-      }
-    })();
-  }, [isLoaded, isSignedIn]);
+  (async () => {
+    const token = await registerForPushNotificationsAsync();
+    if (token) {
+      await saveTokenToSupabase(supabase, token, user.id);
+    }
+  })();
+}, [isLoaded, isSignedIn]);
+
 
   if (!isLoaded) return <ActivityIndicator />;
 
@@ -55,21 +61,22 @@ export default function RootLayout() {
 
   // Notification tap handler
   useEffect(() => {
-    const sub = Notifications.addNotificationResponseReceivedListener((response) => {
-      const route = response.notification.request.content.data?.route;
-      if (route === "todo") {
-        router.replace("/(protected)/(tabs)/todo");
-      }
-    });
+  if (Platform.OS === "web") return;
 
-    return () => sub.remove();
-  }, []);
+  const sub = Notifications.addNotificationResponseReceivedListener((response) => {
+    const route = response.notification.request.content.data?.route;
+    if (route === "todo") {
+      router.replace("/(protected)/(tabs)/todo");
+    }
+  });
+
+  return () => sub.remove();
+}, []);
 
   return (
     <ClerkProvider
     publishableKey={process.env.EXPO_PUBLIC_CLERK_PUBLISHABLE_KEY}
-    tokenCache={tokenCache}
-    >
+    tokenCache={tokenCache}>
       <SupabaseProvider>
         <RootStack />
       </SupabaseProvider>
