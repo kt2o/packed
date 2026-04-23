@@ -3,7 +3,7 @@ import { Text, View, Button, Platform } from 'react-native';
 import * as Device from 'expo-device';
 import * as Notifications from 'expo-notifications';
 import Constants from 'expo-constants';
-import { useSupabase } from "./supabase-client";
+import { useSupabase } from "src/lib/supabase-client";
 import { getDevicePushTokenAsync } from "expo-notifications";
 
 
@@ -73,32 +73,37 @@ export default function App() {
 }
 
 export async function registerForPushNotificationsAsync() {
+
   const { status: existingStatus } = await Notifications.getPermissionsAsync();
-  let finalStatus = existingStatus;
+    let finalStatus = existingStatus;
 
-  if (existingStatus !== "granted") {
-    const { status } = await Notifications.requestPermissionsAsync();
-    finalStatus = status;
-  }
+    if (existingStatus !== "granted") {
+      const { status } = await Notifications.requestPermissionsAsync();
+      finalStatus = status;
+    }
 
-  if (finalStatus !== "granted") {
-    console.log("Permission not granted");
-    return null;
-  }
+    if (finalStatus !== "granted") {
+      console.log("Permission not granted");
+      return null;
+    }
 
-  try {
+   try{
     const tokenResponse = await Notifications.getExpoPushTokenAsync();
     const token = tokenResponse.data;
-
-    console.log("Expo push token:", token);
-
+    console.log("Expo push token:", token.data);
+    console.log("Push token:", token);
     return token;
-  } catch (error) {
-    console.error("Failed to get push token:", error);
-    return null;
-  }
-}
+    } catch (error: any) {
+    // Check if it's a 503 or transient error
+    if (error.message.includes("503") || error.message.includes("SERVICE_UNAVAILABLE")) {
+    console.warn("Expo servers are busy. Notification token will be retried later.");
+     } else {
+     console.error("Failed to get push token:", error);
+      }
+     return null; // Return null so the app continues without crashing
+    }
 
+}
 
 export async function saveTokenToSupabase(supabase: any, token: string, userId: string) {
   if (!token || !userId) return;
@@ -107,12 +112,9 @@ export async function saveTokenToSupabase(supabase: any, token: string, userId: 
 
   const { data, error } = await supabase
   .from("user_push_notifications")
-  .upsert(
-    {
-      user_id: userId,
-      expo_push_token: token,
-    },
-    { onConflict: "user_id" }
-  )
+  .upsert({
+    user_id: userId,
+    expo_push_token: token,
+  });
   console.log("Supabase result:", { data, error });
 }
