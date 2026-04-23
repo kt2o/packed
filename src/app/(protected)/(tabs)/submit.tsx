@@ -22,7 +22,6 @@ export default function SubmitScreen() {
   const { user } = useUser();
   const supabase = useSupabase();
 
-  const userId = user?.id;
   const { verified, id, floorId, status } = useLocalSearchParams<{
     verified: string;
     id?: string;
@@ -34,6 +33,43 @@ export default function SubmitScreen() {
   const [selectedFloor, setSelectedFloor] = useState<string>("");
   const [selectedStatus, setSelectedStatus] = useState<Status>("empty");
   const [submitting, setSubmitting] = useState(false);
+
+  const submitToSupabase = useCallback(
+    async (
+      passedId?: string,
+      passedFloorId?: string,
+      passedStatus?: Status
+    ) => {
+      if (!user?.id) return;
+
+      const finalSpotId = passedId || selectedSpot;
+      const finalFloorId = passedFloorId || selectedFloor;
+      const finalStatus = passedStatus || selectedStatus;
+
+      const { error } = await supabase.from("study_spot_status").insert([
+        {
+          spot_id: finalSpotId,
+          status: finalStatus,
+          user_id: user.id,
+          floor_id: finalFloorId,
+          still_here: false,
+          still_here_at: new Date(Date.now() + 30 * 1000).toISOString(),
+        },
+      ]);
+
+      setSubmitting(false);
+
+      if (error) {
+        Alert.alert("Error", error.message);
+        return;
+      }
+
+      Alert.alert("Success", `Reported as ${finalStatus}`, [
+        { text: "OK", onPress: () => router.back() },
+      ]);
+    },
+    [user?.id, supabase, selectedSpot, selectedFloor, selectedStatus, router]
+  );
 
   useFocusEffect(
     useCallback(() => {
@@ -73,7 +109,7 @@ export default function SubmitScreen() {
       const { data: lastCheckin } = await supabase
         .from("study_spot_status")
         .select("created_at, checked_out_at")
-        .eq("user_id", userId)
+        .eq("user_id", user?.id)
         .eq("spot_id", selectedSpot)
         .order("created_at", { ascending: false })
         .limit(1)
@@ -106,38 +142,6 @@ export default function SubmitScreen() {
     } finally {
       setSubmitting(false);
     }
-  };
-
-  const submitToSupabase = async (
-    passedId?: string,
-    passedFloorId?: string,
-    passedStatus?: Status
-  ) => {
-    const finalSpotId = passedId || selectedSpot;
-    const finalFloorId = passedFloorId || selectedFloor;
-    const finalStatus = passedStatus || selectedStatus;
-
-    const { error } = await supabase.from("study_spot_status").insert([
-      {
-        spot_id: finalSpotId,
-        status: finalStatus,
-        user_id: user.id,
-        floor_id: finalFloorId,
-        still_here: false,
-        still_here_at: new Date(Date.now() + 30 * 1000).toISOString(),
-      },
-    ]);
-
-    setSubmitting(false);
-
-    if (error) {
-      Alert.alert("Error", error.message);
-      return;
-    }
-
-    Alert.alert("Success", `Reported as ${finalStatus}`, [
-      { text: "OK", onPress: () => router.back() },
-    ]);
   };
 
   return (
