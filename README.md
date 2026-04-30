@@ -1,5 +1,7 @@
 # Packed App
 
+Live URL: https://packed-six.vercel.app
+
 Packed App is a cross-platform mobile application designed specifically for CWRU students. It enables users to find, share, and monitor real-time availability and crowdedness of campus study spots, helping students optimize their study sessions through community-driven data.
 
 ---
