@@ -215,6 +215,7 @@ cp Cooldown.fuzz.test.tsx __tests__/Cooldown.fuzz.test.tsx
 cp Pommodoro.fuzz.test.tsx __tests__/Pommodoro.fuzz.test.tsx
 cp RewardSystem.test.tsx __tests__/RewardSystem.test.tsx
 cp TodoScreen.test.tsx __tests__/TodoScreen.test.tsx
+cp Chat.test.tsx __tests__/Chat.test.tsx
 ```
 
 If the files are already inside `__tests__/`, skip this step.
@@ -299,7 +300,7 @@ These tests are useful for validating component behavior and app logic, but they
 - **No real device coverage.** Permission prompts, background notifications, killed-app notification behavior, vibration, and OS-level navigation are only simulated. They should still be tested manually or with device/emulator-based end-to-end tests.
 - **Limited backend validation.** Supabase calls are checked through mock chains, so the tests verify that expected calls are made, not that real database rows are written correctly.
 - **Randomized fuzz tests are not seeded.** The cooldown and timer fuzz tests use random values. They check broad properties, but failures may be harder to reproduce unless the random inputs are logged or seeded in the future.
-- **Some planned functional areas are not fully automated here.** The functional test plan includes app launch/navigation, home occupancy calculations, chat access, message behavior, inactive-user reminders, and some notification delivery scenarios. The uploaded automated tests only cover a subset of these areas.
+- **Some planned functional areas are not fully automated here.** The functional test plan includes app launch/navigation, home occupancy calculations, message behavior, inactive-user reminders, and some notification delivery scenarios. The uploaded automated tests only cover a subset of these areas.
 - **Some tests simulate implementation logic directly.** For example, parts of the Pomodoro notification/vibration behavior are tested by directly calling mocked notification or native APIs, rather than always triggering the full behavior through the component.
 - **Test accuracy depends on stable UI text.** Many tests query visible labels such as `START`, `RESET`, `Edit Profile`, `Sign out`, `Add New Task`, and `No To-Do's yet.` Text changes in the UI may require test updates even when behavior is still correct.
 - **The test files assume a specific project structure.** The tests expect source files under `src/`, including app routes, components, utilities, config, and libraries. If files are moved, update import paths before running the tests.
@@ -309,7 +310,6 @@ These tests are useful for validating component behavior and app logic, but they
 To strengthen coverage, add tests for:
 
 - Home screen study spot occupancy display and floor-level status display.
-- Chat access and message behavior.
 - Real notification scheduling behavior in a device or emulator environment.
 - End-to-end check-in flow using a test backend or seeded Supabase project.
 - Seeded fuzz tests so random failures can be reproduced exactly.
