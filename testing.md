@@ -166,18 +166,18 @@ Covers the to-do route with a mocked Supabase data store:
 
 ChatScreen Route Test Coverage:
 
--Covers the chat route with a mocked Supabase data store that always returns no active check‑in.
--Rendering the chat screen’s loading state with a visible activity indicator.
--Showing the locked state when the user has no active check‑in.
--Displaying the lock icon, “Chat Locked” header, and explanatory message.
--Rendering the “Contribute Now” button for users who are not checked in.
--Ensuring no chat UI elements appear when the user is not verified:
--No message list
--No input field
--No send button
--No chat header
--Verifying that the route does not crash or enter infinite re-render loops when Supabase returns empty results.
--Keeping the route test focused by mocking navigation and Supabase behavior separately.
+- Covers the chat route with a mocked Supabase data store that always returns no active check‑in.
+- Rendering the chat screen’s loading state with a visible activity indicator.
+- Showing the locked state when the user has no active check‑in.
+- Displaying the lock icon, “Chat Locked” header, and explanatory message.
+- Rendering the “Contribute Now” button for users who are not checked in.
+- Ensuring no chat UI elements appear when the user is not verified:
+- No message list
+- No input field
+- No send button
+- No chat header
+- Verifying that the route does not crash or enter infinite re-render loops when Supabase returns empty results.
+- Keeping the route test focused by mocking navigation and Supabase behavior separately.
 
 
 
