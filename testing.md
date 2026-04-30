@@ -162,7 +162,7 @@ Covers the to-do route with a mocked Supabase data store:
 
 ### Chat Screen tests
 
-**File:** '__tests__/Chat.test.tsx`
+**File:** `__tests__/Chat.test.tsx`
 
 ChatScreen Route Test Coverage:
 
