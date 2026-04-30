@@ -22,6 +22,7 @@ __tests__/Cooldown.fuzz.test.tsx
 __tests__/Pommodoro.fuzz.test.tsx
 __tests__/RewardSystem.test.tsx
 __tests__/TodoScreen.test.tsx
+__tests__/Chat.test.tsx
 ```
 
 > Note: `Pommodoro.fuzz.test.tsx` is intentionally listed with the filename currently provided. The file tests Pomodoro timer utility logic, but the filename contains an extra `m` in `Pommodoro`.
@@ -159,6 +160,27 @@ Covers the to-do route with a mocked Supabase data store:
 - Detecting overdue tasks.
 - Keeping the route test focused by mocking `PomodoroTimer` separately.
 
+### Chat Screen tests
+
+**File:** `__tests__/Chat.test.tsx`
+
+ChatScreen Route Test Coverage:
+
+- Covers the chat route with a mocked Supabase data store that always returns no active check‑in.
+- Rendering the chat screen’s loading state with a visible activity indicator.
+- Showing the locked state when the user has no active check‑in.
+- Displaying the lock icon, “Chat Locked” header, and explanatory message.
+- Rendering the “Contribute Now” button for users who are not checked in.
+- Ensuring no chat UI elements appear when the user is not verified:
+- No message list
+- No input field
+- No send button
+- No chat header
+- Verifying that the route does not crash or enter infinite re-render loops when Supabase returns empty results.
+- Keeping the route test focused by mocking navigation and Supabase behavior separately.
+
+
+
 ## How to run the tests
 
 Run all commands from the project root.
@@ -193,6 +215,7 @@ cp Cooldown.fuzz.test.tsx __tests__/Cooldown.fuzz.test.tsx
 cp Pommodoro.fuzz.test.tsx __tests__/Pommodoro.fuzz.test.tsx
 cp RewardSystem.test.tsx __tests__/RewardSystem.test.tsx
 cp TodoScreen.test.tsx __tests__/TodoScreen.test.tsx
+cp Chat.test.tsx __tests__/Chat.test.tsx
 ```
 
 If the files are already inside `__tests__/`, skip this step.
@@ -231,6 +254,7 @@ npx jest __tests__/Cooldown.fuzz.test.tsx --runInBand
 npx jest __tests__/Pommodoro.fuzz.test.tsx --runInBand
 npx jest __tests__/RewardSystem.test.tsx --runInBand
 npx jest __tests__/TodoScreen.test.tsx --runInBand
+npx jest __tests__/Chat.test.tsx --runInBand
 ```
 
 ### 5. Run in watch mode while developing
@@ -276,7 +300,7 @@ These tests are useful for validating component behavior and app logic, but they
 - **No real device coverage.** Permission prompts, background notifications, killed-app notification behavior, vibration, and OS-level navigation are only simulated. They should still be tested manually or with device/emulator-based end-to-end tests.
 - **Limited backend validation.** Supabase calls are checked through mock chains, so the tests verify that expected calls are made, not that real database rows are written correctly.
 - **Randomized fuzz tests are not seeded.** The cooldown and timer fuzz tests use random values. They check broad properties, but failures may be harder to reproduce unless the random inputs are logged or seeded in the future.
-- **Some planned functional areas are not fully automated here.** The functional test plan includes app launch/navigation, home occupancy calculations, chat access, message behavior, inactive-user reminders, and some notification delivery scenarios. The uploaded automated tests only cover a subset of these areas.
+- **Some planned functional areas are not fully automated here.** The functional test plan includes app launch/navigation, home occupancy calculations, message behavior, inactive-user reminders, and some notification delivery scenarios. The uploaded automated tests only cover a subset of these areas.
 - **Some tests simulate implementation logic directly.** For example, parts of the Pomodoro notification/vibration behavior are tested by directly calling mocked notification or native APIs, rather than always triggering the full behavior through the component.
 - **Test accuracy depends on stable UI text.** Many tests query visible labels such as `START`, `RESET`, `Edit Profile`, `Sign out`, `Add New Task`, and `No To-Do's yet.` Text changes in the UI may require test updates even when behavior is still correct.
 - **The test files assume a specific project structure.** The tests expect source files under `src/`, including app routes, components, utilities, config, and libraries. If files are moved, update import paths before running the tests.
@@ -286,7 +310,6 @@ These tests are useful for validating component behavior and app logic, but they
 To strengthen coverage, add tests for:
 
 - Home screen study spot occupancy display and floor-level status display.
-- Chat access and message behavior.
 - Real notification scheduling behavior in a device or emulator environment.
 - End-to-end check-in flow using a test backend or seeded Supabase project.
 - Seeded fuzz tests so random failures can be reproduced exactly.

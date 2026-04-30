@@ -102,7 +102,7 @@ export default function ChatScreen() {
   );
 
   useEffect(() => {
-    if (!spotId) return; // Wait until we know the spot
+    if (!spotId) return;
 
     let isMounted = true;
 
@@ -135,7 +135,7 @@ export default function ChatScreen() {
       )
       .subscribe();
 
-    // loctcation check
+    // location check
     /**
      * Confirm whether the user still has access to the current spot chat.
      */
@@ -149,7 +149,7 @@ export default function ChatScreen() {
         .from("check_ins")
         .select("spot_id, updated_at")
         .eq("user_id", userId)
-        .order("updated_at", { ascending: false }) // Get the absolute newest one
+        .order("updated_at", { ascending: false })
         .limit(1)
         .maybeSingle();
 
@@ -181,15 +181,12 @@ export default function ChatScreen() {
   const sendMessage = async () => {
       if (!text.trim()) return; // Stop empty messages
 
-      // 1. MATCH YOUR TABLE SCHEMA
-      // Ensure 'content' is the name of your column in Supabase
+      // 1. Load messages
       const newMessage = {
         id: Math.random().toString(),
         text: text, // <--- We use 'content' here
         user_id: userId,
         username: user?.username,
-        // CRITICAL: If your DB requires a location/spot ID, you CANNOT send null.
-        // Replace 'locationId' with the actual ID of the library/room.
         spot_id: spotId,
         created_at: new Date().toISOString(),
       };
@@ -205,7 +202,7 @@ export default function ChatScreen() {
           text: textToSend,
           username: user?.username,
           user_id: userId,
-          spot_id: spotId, // Ensure this matches your DB column name
+          spot_id: spotId,
         },
       ]);
 
@@ -222,7 +219,7 @@ export default function ChatScreen() {
   if (loading) {
     return (
       <View style={{ flex: 1, justifyContent: "center", alignItems: "center" }}>
-        <ActivityIndicator size="large" />
+        <ActivityIndicator size="large" testID="loading-indicator" />
       </View>
     );
   }
@@ -294,6 +291,7 @@ export default function ChatScreen() {
 
 
       <FlatList
+        testID="chat-flatlist"
         data={messages}
         keyExtractor={(item, index) => item.id?.toString() || index.toString()}
         renderItem={({ item }) => {
@@ -361,7 +359,7 @@ export default function ChatScreen() {
             marginRight: 8
           }}
         />
-        {/* Fixed the onPress syntax below */}
+
         <Button title="Send" onPress={sendMessage} />
       </View>
     </View>
