@@ -5,6 +5,9 @@ import { createContext, useContext, useMemo } from "react";
 const supabaseUrl = process.env.EXPO_PUBLIC_SUPABASE_URL!;
 const supabaseAnonKey = process.env.EXPO_PUBLIC_SUPABASE_ANON_KEY!;
 
+/**
+ * React provider that exposes a Supabase client configured with Clerk auth.
+ */
 const SupabaseContext = createContext<any>(null);
 
 export const SupabaseProvider = ({
@@ -37,4 +40,7 @@ export const SupabaseProvider = ({
   );
 };
 
+/**
+ * Return the current Supabase client from the provider context.
+ */
 export const useSupabase = () => useContext(SupabaseContext);

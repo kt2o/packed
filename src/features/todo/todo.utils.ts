@@ -1,3 +1,9 @@
+/**
+ * Utility helpers for the todo and pomodoro experience.
+ *
+ * This module includes deadline formatting, notification permission helpers,
+ * and deadline reminder scheduling.
+ */
 import * as Notifications from "expo-notifications";
 import { DeadlineStatus, Todo } from "./todo.types";
 
@@ -12,6 +18,9 @@ export const REMINDER_OFFSETS = [
 
 let notificationHandlerConfigured = false;
 
+/**
+ * Configure Expo Notifications to show the right UI for reminder notifications.
+ */
 export function configureNotificationHandler(): void {
   if (notificationHandlerConfigured) return;
 
@@ -27,6 +36,9 @@ export function configureNotificationHandler(): void {
   notificationHandlerConfigured = true;
 }
 
+/**
+ * Sort a list of todos so items with soonest deadlines appear first.
+ */
 export function sortTodosByDeadline(items: Todo[]): Todo[] {
   return [...items].sort((a, b) => {
     if (a.deadline_at && b.deadline_at) {
@@ -42,6 +54,9 @@ export function sortTodosByDeadline(items: Todo[]): Todo[] {
   });
 }
 
+/**
+ * Derive an urgency status string from a deadline timestamp.
+ */
 export function getDeadlineStatus(deadlineAt: string | null): DeadlineStatus {
   if (!deadlineAt) return "none";
 
@@ -57,6 +72,9 @@ export function getDeadlineStatus(deadlineAt: string | null): DeadlineStatus {
   return "normal";
 }
 
+/**
+ * Return styling metadata for a given deadline urgency status.
+ */
 export function getDeadlineStyle(status: DeadlineStatus) {
   switch (status) {
     case "completed":
@@ -74,6 +92,9 @@ export function getDeadlineStyle(status: DeadlineStatus) {
   }
 }
 
+/**
+ * Produce a human-readable label for a deadline status.
+ */
 export function getDeadlineLabel(status: DeadlineStatus): string {
   switch (status) {
     case "overdue":
@@ -89,6 +110,11 @@ export function getDeadlineLabel(status: DeadlineStatus): string {
   }
 }
 
+/**
+ * Request Expo notification permissions from the user.
+ *
+ * Returns true when permission is granted.
+ */
 export async function requestNotificationPermission(): Promise<boolean> {
   const { status: existingStatus } = await Notifications.getPermissionsAsync();
   let finalStatus = existingStatus;
@@ -101,6 +127,9 @@ export async function requestNotificationPermission(): Promise<boolean> {
   return finalStatus === "granted";
 }
 
+/**
+ * Schedule reminders for a todo deadline at predefined offsets.
+ */
 export async function scheduleDeadlineReminders(
   title: string,
   deadlineAt: string | null

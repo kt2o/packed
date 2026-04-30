@@ -14,6 +14,11 @@ import {
   View,
 } from "react-native";
 
+/**
+ * Sign-in screen for the app.
+ *
+ * Handles email/password sign in and second-factor email code authentication.
+ */
 export default function Page() {
   const { signIn, setActive, isLoaded } = useSignIn();
 
@@ -41,6 +46,9 @@ export default function Page() {
     )}`;
   }, [identifier]);
 
+  /**
+   * Normalize Clerk error payloads into user-facing messages.
+   */
   const formatError = (err: unknown) => {
     if (
       typeof err === "object" &&
@@ -58,6 +66,9 @@ export default function Page() {
     return "Something went wrong. Please try again.";
   };
 
+  /**
+   * Process sign-in and advance to second-factor authentication if needed.
+   */
   const onSignInPress = React.useCallback(async () => {
     if (!isLoaded || isSubmitting) return;
 
@@ -99,6 +110,9 @@ export default function Page() {
     }
   }, [identifier, isLoaded, isSubmitting, password, setActive, signIn]);
 
+  /**
+   * Verify the email code during sign-in second-factor flow.
+   */
   const onVerifyPress = React.useCallback(async () => {
     if (!isLoaded || isSubmitting) return;
 
@@ -128,11 +142,17 @@ export default function Page() {
     }
   }, [code, isLoaded, isSubmitting, setActive, signIn]);
 
+  /**
+   * Normalize the second-factor input field to numeric-only values.
+   */
   const onCodeChange = React.useCallback((text: string) => {
     const cleaned = text.replace(/\D/g, "").slice(0, 6);
     setCode(cleaned);
   }, []);
 
+  /**
+   * Render the verification code entry UI.
+   */
   const renderCodeBoxes = () => {
     return (
       <Pressable

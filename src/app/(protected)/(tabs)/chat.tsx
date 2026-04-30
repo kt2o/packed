@@ -4,6 +4,12 @@ import { useSupabase } from "../../../lib/supabase-client";
 import { useRouter, useLocalSearchParams, useFocusEffect } from "expo-router";
 import { useUser } from "@clerk/clerk-expo";
 
+/**
+ * Chat screen for spot-based messaging.
+ *
+ * Displays messages for the current verified spot and syncs chat updates
+ * using Supabase real-time channels.
+ */
 export default function ChatScreen() {
 
   //States
@@ -29,6 +35,9 @@ export default function ChatScreen() {
 
 
 
+    /**
+     * Load the user's latest active check-in and verify their current spot.
+     */
     const fetchActiveCheckin = async () => {
       setLoading(true);
 
@@ -97,6 +106,9 @@ export default function ChatScreen() {
 
     let isMounted = true;
 
+    /**
+     * Load recent chat messages for the current spot from Supabase.
+     */
     const loadMessages = async () => {
       const { data, error } = await supabase
         .from("messages")
@@ -124,6 +136,9 @@ export default function ChatScreen() {
       .subscribe();
 
     // loctcation check
+    /**
+     * Confirm whether the user still has access to the current spot chat.
+     */
     const verifyAccess = async () => {
       // 1. Create a timestamp for 2 hours ago
       const twoHoursAgo = new Date(
@@ -160,6 +175,9 @@ export default function ChatScreen() {
 
 
 
+  /**
+   * Send a new chat message to Supabase and update the local message list.
+   */
   const sendMessage = async () => {
       if (!text.trim()) return; // Stop empty messages
 

@@ -28,6 +28,12 @@ type Todo = {
 };
 
 
+/**
+ * Determine the visual deadline status for a todo item.
+ *
+ * @param deadlineAt - ISO deadline timestamp or null
+ * @returns status key used for styling and labels
+ */
 function getDeadlineStatus(deadlineAt: string | null) {
   if (!deadlineAt) return "none";
 
@@ -44,6 +50,10 @@ function getDeadlineStatus(deadlineAt: string | null) {
   return "normal";
 }
 
+/**
+ * Map deadline status into inline todo card styles.
+ * @param status - deadline status value from getDeadlineStatus
+ */
 function getDeadlineStyle(status: string) {
   switch (status) {
     case "completed":
@@ -61,6 +71,9 @@ function getDeadlineStyle(status: string) {
   }
 }
 
+/**
+ * Convert deadline status to a human-readable label.
+ */
 function getDeadlineLabel(status: string) {
   switch (status) {
     case "overdue":
@@ -76,6 +89,10 @@ function getDeadlineLabel(status: string) {
   }
 }
 
+/**
+ * Sort todo items by deadline and fallback to creation time.
+ * Tasks with earlier deadlines appear first.
+ */
 function sortTodosByDeadline(items: Todo[]) {
   return [...items].sort((a, b) => {
     if (a.deadline_at && b.deadline_at) {
@@ -91,6 +108,13 @@ function sortTodosByDeadline(items: Todo[]) {
   });
 }
 
+/**
+ * The main Todo route for authenticated users.
+ *
+ * This screen loads the user's todo items from Supabase, supports task
+ * creation and deadline selection, and integrates a Pomodoro timer for
+ * focused workflow sessions.
+ */
 export default function TodoScreen() {
   // 1. HOOKS
   const { user } = useUser();
@@ -119,6 +143,9 @@ export default function TodoScreen() {
 
   // 3. DATABASE LOGIC (Uses the 'supabase' instance from the top)
 
+  /**
+   * Load todos from Supabase for the current user.
+   */
   async function loadTodos() {
     if (!user || !supabase) return;
     setLoading(true);
@@ -135,6 +162,10 @@ export default function TodoScreen() {
     setLoading(false);
   }
 
+  /**
+   * Add a new todo to Supabase and local state.
+   * Optionally schedules a deadline reminder if notification permission is granted.
+   */
   async function handleAddTodo() {
     const trimmedTitle = title.trim();
     if (!trimmedTitle || !user || !supabase) return;
@@ -169,6 +200,9 @@ export default function TodoScreen() {
     setAdding(false);
   }
 
+  /**
+   * Toggle completed state for a todo item.
+   */
   async function toggleTodo(item: Todo) {
     if (!supabase) return;
     const { data, error } = await supabase
@@ -183,6 +217,9 @@ export default function TodoScreen() {
     }
   }
 
+  /**
+   * Delete a todo from Supabase and remove it from local state.
+   */
   async function deleteTodo(id: string) {
     if (!supabase) return;
     const { error } = await supabase.from("todo_list").delete().eq("id", id);
@@ -191,6 +228,9 @@ export default function TodoScreen() {
     }
   }
 
+  /**
+   * Update the title of an existing todo item.
+   */
   async function updateTodo(id: string) {
     const trimmedTitle = editingTitle.trim();
     if (!trimmedTitle || !supabase) return;
@@ -238,6 +278,12 @@ useEffect(() => {
 } return () => clearInterval(interval);
 }, [isActive]);
 
+/**
+ * Toggle the Pomodoro timer between running and paused states.
+ *
+ * When starting, this schedules a completion notification for the current
+ * focus/break session.
+ */
   const handleToggle = async () => {
    if (!isActive) {
    const totalSeconds = minutes * 60 + seconds;
@@ -267,6 +313,9 @@ useEffect(() => {
   }
   };
 
+/**
+ * Change the Pomodoro mode to either break or focus and reset the session.
+ */
   const handleSwitchMode = async (toBreak: boolean) => {
 
     setIsActive(false);
@@ -278,6 +327,9 @@ useEffect(() => {
 
   };
 
+/**
+ * Show the Pomodoro completion alert and offer to switch modes.
+ */
   const triggerCompletionAlert = () => {
     Vibration.vibrate([500, 500, 500]);
     Alert.alert("Time's Up!", `Ready for your ${isBreak ? "Work" : "Break"}?`, [

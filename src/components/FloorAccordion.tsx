@@ -21,6 +21,13 @@ const statusColor: Record<string, string> = {
         unknown: "gray",
     };
 
+
+/**
+ * Accordion component for displaying floor-level status details.
+ *
+ * It renders floor entries for a selected study spot and shows a
+ * color-coded status dot for each floor.
+ */
 export default function FloorAccordion({ floors, statusByFloorId, isOpen }: Props) {
 
   return (

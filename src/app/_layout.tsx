@@ -20,6 +20,11 @@ if (Platform.OS !== "web") {
 }
 
 
+/**
+ * Private stack component that decides which flow to render based on user auth.
+ *
+ * It also initializes push notification registration once Clerk is ready.
+ */
 function RootStack() {
   const { isSignedIn, isLoaded } = useAuth();
   const { user } = useUser();
@@ -37,6 +42,10 @@ function RootStack() {
     }
   })();
 }, [isLoaded, isSignedIn]);
+
+  /**
+   * Render the protected auth flow for the root navigator.
+   */
 
 
   if (!isLoaded) return <ActivityIndicator />;
@@ -56,6 +65,14 @@ function RootStack() {
   );
 }
 
+/**
+ * Root layout for the app.
+ *
+ * This module wires together Clerk authentication, Supabase, and Expo
+ * notifications. It chooses the authenticated or unauthenticated flow based
+ * on the user's sign-in state, and also listens for notification responses
+ * to route the user into the app.
+ */
 export default function RootLayout() {
   const router = useRouter();
 
@@ -72,6 +89,11 @@ export default function RootLayout() {
 
   return () => sub.remove();
 }, []);
+
+  /**
+   * Root application container. Wraps the app in Clerk and Supabase providers
+   * so that auth and database clients are available to child routes.
+   */
 
   return (
     <ClerkProvider

@@ -18,6 +18,9 @@ import FloorAccordion from "src/components/FloorAccordion";
 import * as Notifications from "expo-notifications";
 import { useUser } from "@clerk/clerk-expo";
 
+/**
+ * Convert a spot occupancy ratio into a normalized status label.
+ */
 function getStatus(count: number, capacity: number) {
   const ratio = count / capacity;
   if (ratio >= 1) return "full";
@@ -26,6 +29,11 @@ function getStatus(count: number, capacity: number) {
   return "empty";
 }
 
+/**
+ * Home/status screen showing study spots and their current busyness.
+ *
+ * Includes refresh behavior, floor status, and in-app notification handling.
+ */
 export default function HomeScreen() {
   const { user } = useUser();
   const userId = user?.id;
@@ -46,6 +54,9 @@ useEffect(() => {
   return () => subscription.remove();
 }, []);
 
+  /**
+   * Record the user's response to the "still here" prompt.
+   */
   const handleStillHereResponse = async (response: "yes" | "no") => {
     setShowStillHerePrompt(false);
 
@@ -91,6 +102,9 @@ useEffect(() => {
     return spotsWithOpinion.find((s) => s.id === expandedSpotId);
   }, [expandedSpotId, spotsWithOpinion]);
 
+  /**
+   * Fetch the latest spot occupancy counts from Supabase.
+   */
   async function fetchStudySpotStatus() {
     const { data: counts, error } = await supabase
       .from("spot_counts")
@@ -124,6 +138,9 @@ useEffect(() => {
       )
     )
   );
+  /**
+   * Fetch the latest floor-level status updates from Supabase.
+   */
   async function fetchFloorStatus() {
     const { data, error } = await supabase
       .from("study_spot_status")
@@ -158,6 +175,9 @@ useEffect(() => {
     fetchFloorStatus();
   }, []);
 
+  /**
+   * Refresh all spot status data when the user pulls down.
+   */
   const onRefresh = async () => {
     setRefreshing(true);
     await Promise.all([
@@ -170,6 +190,9 @@ useEffect(() => {
 
   const [openId, setOpenId] = useState<string | null>(null);
 
+  /**
+   * Fetch community opinion data for each spot from Supabase.
+   */
   async function fetchOpinion() {
     const { data, error } = await supabase
       .from("spot_opinion_summary")

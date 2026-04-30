@@ -10,6 +10,9 @@ interface DropdownProps {
   placeholder?: string;
 }
 
+/**
+ * Reusable dropdown component for selecting location-related values.
+ */
 export const LocationDropDown = ({ label, data, value, onChange, placeholder }: DropdownProps) => {
   return (
     <View style={styles.container}>

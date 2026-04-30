@@ -1,5 +1,8 @@
-// supabase/functions/userstatus-reminder/index.ts
-
+/**
+ * Supabase Edge function to prompt users with a "still here" check.
+ *
+ * Sends push notifications for active study sessions and updates reminder state.
+ */
 export const config = {
 runtime: "edge",
 regions: ["iad"],

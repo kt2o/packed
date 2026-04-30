@@ -15,6 +15,11 @@ import { SignOutButton } from "src/components/sign-out-button";
 import { EditProfileModal } from "src/components/EditProfileModal";
 import { useSupabase } from "../../../lib/supabase-client";
 
+/**
+ * Profile screen for displaying user information and rewards.
+ *
+ * Handles reward loading, profile editing, and sign-out.
+ */
 export default function ProfileScreen() {
   const { user, isLoaded } = useUser();
   const supabase = useSupabase();
@@ -22,7 +27,13 @@ export default function ProfileScreen() {
   const [isEditModalVisible, setIsEditModalVisible] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
 
+  /**
+   * Open the edit profile modal.
+   */
   const handleOpenEditModal = () => setIsEditModalVisible(true);
+  /**
+   * Close the edit profile modal.
+   */
   const handleCloseEditModal = () => setIsEditModalVisible(false);
 
   const [rewards, setRewards] = useState({
@@ -34,6 +45,9 @@ export default function ProfileScreen() {
   const [rewardsLoading, setRewardsLoading] = useState(true);
   const [rewardsError, setRewardsError] = useState<string | null>(null);
 
+  /**
+   * Load the current user's reward progress from Supabase.
+   */
   const loadRewards = async () => {
     if (!isLoaded || !userId) return;
 
@@ -70,6 +84,9 @@ export default function ProfileScreen() {
     }
   }, [isLoaded, userId]);
 
+  /**
+   * Persist profile changes such as username and profile image.
+   */
   const handleSaveProfile = async (
     newUsername: string,
     newImageUri: string | null

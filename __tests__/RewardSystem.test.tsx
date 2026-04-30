@@ -1,3 +1,8 @@
+/**
+ * Tests for the reward progress UI and badge rendering behavior.
+ *
+ * @module __tests__/RewardSystem.test
+ */
 import { render, fireEvent } from "@testing-library/react-native";
 import { RewardSystem } from "../src/components/RewardSystem";
 

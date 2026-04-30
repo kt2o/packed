@@ -1,4 +1,7 @@
 
+/**
+ * Shared type definitions used for status labels and header props.
+ */
 import { ReactNode } from "react";
 import { ViewStyle } from "react-native";
 

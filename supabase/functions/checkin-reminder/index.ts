@@ -1,3 +1,9 @@
+/**
+ * Scheduled Supabase Edge function for re-engagement reminders.
+ *
+ * Fetches due check-ins and sends Expo push notifications to prompt users
+ * back to the study flow.
+ */
 export const config = {
 runtime: "edge",
 regions: ["iad"],

@@ -4,6 +4,11 @@ import Ionicons from "@expo/vector-icons/Ionicons";
 import FontAwesome5 from "@expo/vector-icons/FontAwesome5";
 import { View, Text } from "react-native";
 
+/**
+ * Tab layout for the protected app section.
+ *
+ * Defines the main bottom-tab navigation for status, submit, chat, todo, and profile.
+ */
 export default function TabLayout() {
   return (
     <Tabs>

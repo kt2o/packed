@@ -17,6 +17,12 @@ import {
 import { RadioButton } from "react-native-paper";
 import LocationDropDown from "../../../components/LocationDropDown";
 
+/**
+ * Submit screen for updating study spot occupancy status.
+ *
+ * Supports selecting a location, floor, and busy status, then writing the
+ * report back to Supabase.
+ */
 export default function SubmitScreen() {
   const router = useRouter();
   const { user } = useUser();
@@ -34,6 +40,11 @@ export default function SubmitScreen() {
   const [selectedStatus, setSelectedStatus] = useState<Status>("empty");
   const [submitting, setSubmitting] = useState(false);
 
+  /**
+   * Insert a status report into Supabase for the current user.
+   *
+   * Accepts optionally pre-filled values from a verified spot flow.
+   */
   const submitToSupabase = useCallback(
     async (
       passedId?: string,
@@ -98,6 +109,11 @@ export default function SubmitScreen() {
     [selectedSpot]
   );
 
+  /**
+   * Validate the current form and navigate to the check-in flow.
+   *
+   * This function prevents duplicate check-ins inside the cooldown window.
+   */
   const handleSubmit = async () => {
     if (!selectedSpot) {
       Alert.alert("Error", "No location was provided.");

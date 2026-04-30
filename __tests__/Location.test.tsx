@@ -1,3 +1,8 @@
+/**
+ * Location-related tests for study spot validation and geolocation helpers.
+ *
+ * @module __tests__/Location.test
+ */
 jest.mock("../src/config/studySpots", () => ({
   spots: [
     {

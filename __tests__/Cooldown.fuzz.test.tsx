@@ -1,3 +1,8 @@
+/**
+ * Fuzz tests covering the check-in cooldown utility.
+ *
+ * @module __tests__/Cooldown.fuzz.test
+ */
 import { canCheckIn } from "../src/utils/cooldown";
 
 describe("Fuzz Testing: canCheckIn()", () => {

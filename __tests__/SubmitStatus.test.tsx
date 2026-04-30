@@ -1,3 +1,8 @@
+/**
+ * Tests for the submit status screen and reporting flow.
+ *
+ * @module __tests__/SubmitStatus.test
+ */
 import React from "react";
 import { render, fireEvent, waitFor } from "@testing-library/react-native";
 import { useRouter, useLocalSearchParams } from "expo-router";

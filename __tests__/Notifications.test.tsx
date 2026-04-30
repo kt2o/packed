@@ -1,3 +1,11 @@
+/**
+ * Test suite for notification registration and Supabase token storage.
+ *
+ * This file validates permission handling, Expo token acquisition, and the
+ * notification handler registration side effects.
+ *
+ * @module __tests__/Notifications.test
+ */
 jest.mock("expo-notifications", () => ({
   setNotificationHandler: jest.fn(),
   getPermissionsAsync: jest.fn(),

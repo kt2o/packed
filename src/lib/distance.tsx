@@ -1,3 +1,9 @@
+/**
+ * Distance utilities for geolocation-based flows.
+ */
+/**
+ * Calculate great-circle distance between two GPS coordinates in meters.
+ */
 export function getDistanceMeters(lat1, lon1, lat2, lon2){
 
   const R = 6371000;

@@ -1,3 +1,8 @@
+/**
+ * Scheduled Edge function for todo deadline reminders.
+ *
+ * Uses a Supabase RPC to find due todos and sends push notifications for each.
+ */
 export const config = {
 runtime: "edge",
 regions: ["iad"],

@@ -5,6 +5,12 @@ import { useAuth, useUser } from "@clerk/clerk-expo";
 import { registerForPushNotificationsAsync } from "src/lib/notifications";
 import { saveTokenToSupabase } from "src/lib/notifications";
 
+/**
+ * Protected route layout.
+ *
+ * Ensures only authenticated users can access protected routes and
+ * registers push notifications once the user is available.
+ */
 export default function ProtectedLayout() {
   const { isSignedIn, isLoaded } = useAuth();
   const { user } = useUser();

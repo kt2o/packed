@@ -1,3 +1,11 @@
+/**
+ * Integration tests for the Todo route.
+ *
+ * These tests verify the app's screen-level interactions for task creation,
+ * deadline selection, and empty state handling in the todo flow.
+ *
+ * @module __tests__/TodoScreen.test
+ */
 import { render, waitFor, fireEvent } from "@testing-library/react-native";
 
 const mockUser = { id: "test-user" };

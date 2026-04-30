@@ -1,3 +1,9 @@
+/**
+ * Push notification utilities used by the mobile application.
+ *
+ * This module handles permission requests, token registration, and saving
+ * push tokens to Supabase.
+ */
 import { Platform } from "react-native";
 import * as Notifications from "expo-notifications";
 
@@ -11,6 +17,9 @@ if (Platform.OS !== "web") {
   });
 }
 
+/**
+ * Request push notification permission and return the Expo push token.
+ */
 export async function registerForPushNotificationsAsync() {
   if (Platform.OS === "web") return null;
 
@@ -34,6 +43,9 @@ export async function registerForPushNotificationsAsync() {
   }
 }
 
+/**
+ * Store the Expo push token in Supabase for the current user.
+ */
 export async function saveTokenToSupabase(supabase, token, userId) {
   if (!token || !userId) return;
 

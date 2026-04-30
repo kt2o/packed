@@ -2,11 +2,19 @@ import { useClerk } from "@clerk/clerk-expo";
 import { useRouter } from "expo-router";
 import { Pressable, StyleSheet, Text, Alert } from "react-native";
 
+/**
+ * Sign-out button component.
+ *
+ * Prompts the user for confirmation and signs out via Clerk.
+ */
 export const SignOutButton = () => {
   // Use `useClerk()` to access the `signOut()` function
   const { signOut } = useClerk();
   const router = useRouter();
 
+  /**
+   * Sign the current user out via Clerk.
+   */
   const handleSignOut = async () => {
     try {
       await signOut();
@@ -19,6 +27,9 @@ export const SignOutButton = () => {
     }
   };
 
+  /**
+   * Confirm sign-out with the user before performing the action.
+   */
   const onPressSignOut = () => {
     Alert.alert("Sign Out", "Are you sure you want to sign out?", [
       {

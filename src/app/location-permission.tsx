@@ -1,11 +1,24 @@
+/**
+ * Screen that requests location access from the user.
+ *
+ * This route is used when study spot check-in requires foreground location.
+ */
 import { View, Text, Button } from "react-native";
 import * as Location from "expo-location";
 import { useRouter } from "expo-router";
 import React from "react";
 
+/**
+ * Screen that requests location access from the user.
+ *
+ * This route is used when study spot check-in requires foreground location.
+ */
 export default function LocationPermissionScreen() {
   const router = useRouter();
 
+  /**
+   * Request foreground location access and continue into the protected flow.
+   */
   async function requestPermission() {
     const { status } = await Location.requestForegroundPermissionsAsync();
 
@@ -19,6 +32,9 @@ export default function LocationPermissionScreen() {
     }
   }
 
+  /**
+   * Skip location permission and continue to the main app.
+   */
   function skip() {
     router.replace("/(protected)/(tabs)"); // allow browsing without location
   }

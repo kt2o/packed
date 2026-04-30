@@ -1,3 +1,9 @@
+/**
+ * Fuzz tests for the timer utility to ensure robust remaining-time
+ * calculations across random inputs.
+ *
+ * @module __tests__/Pommodoro.fuzz.test
+ */
 import { calculateRemainingTime } from "../src/utils/timer";
 
 describe("Fuzz Testing: calculateRemainingTime()", () => {

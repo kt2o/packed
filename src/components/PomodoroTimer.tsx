@@ -11,6 +11,9 @@ interface PomodoroProps {
   onSwitchMode: (toBreak: boolean) => void;
 }
 
+/**
+ * Visual Pomodoro timer that displays session time and controls.
+ */
 export default function PomodoroTimer({
   minutes,
   seconds,

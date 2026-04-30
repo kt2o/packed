@@ -13,6 +13,11 @@ import {
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
+/**
+ * Sign-up screen for creating a new user account.
+ *
+ * Handles email registration, username setup, and email code verification.
+ */
 export default function Page() {
   const { isLoaded, signUp, setActive } = useSignUp();
 
@@ -38,6 +43,9 @@ export default function Page() {
     return `${visible}${"•".repeat(Math.max(name.length - 2, 2))}@${domain}`;
   }, [emailAddress]);
 
+  /**
+   * Normalize Clerk error payloads into user-facing messages.
+   */
   const formatError = (err: unknown) => {
     if (
       typeof err === "object" &&
@@ -54,6 +62,9 @@ export default function Page() {
     return "Something went wrong. Please try again.";
   };
 
+  /**
+   * Handle the initial sign-up submission and start email verification.
+   */
   const onSignUpPress = React.useCallback(async () => {
     if (!isLoaded || isSubmitting) return;
 
@@ -84,6 +95,9 @@ export default function Page() {
     }
   }, [emailAddress, isLoaded, isSubmitting, password, signUp, username]);
 
+  /**
+   * Complete the email verification flow using the entered code.
+   */
   const onVerifyPress = React.useCallback(async () => {
     if (!isLoaded || isSubmitting) return;
 
@@ -112,11 +126,17 @@ export default function Page() {
     }
   }, [code, isLoaded, isSubmitting, setActive, signUp]);
 
+  /**
+   * Restrict verification input to six numeric digits.
+   */
   const onCodeChange = React.useCallback((text: string) => {
     const cleaned = text.replace(/\D/g, "").slice(0, 6);
     setCode(cleaned);
   }, []);
 
+  /**
+   * Render the six input boxes for the verification code.
+   */
   const renderCodeBoxes = () => {
     return (
       <Pressable

@@ -18,6 +18,21 @@ type TodoItemProps = {
     onUpdate: (id: string) => void;
 };
 
+/**
+ * Renders a todo item row with completion toggle, deadline label, and edit/delete actions.
+ *
+ * When the item is being edited, the component shows an inline text input and save/cancel buttons.
+ * Otherwise it shows the title, completion state, deadline date, and deadline status label.
+ *
+ * @param item - The todo item being rendered.
+ * @param editingId - The id of the todo currently being edited, or null.
+ * @param editingTitle - The current text value shown while editing.
+ * @param setEditingTitle - Callback to update the current edit text.
+ * @param setEditingId - Callback to toggle edit mode for a specific todo.
+ * @param onToggle - Callback to toggle completion for the item.
+ * @param onDelete - Callback to delete the item.
+ * @param onUpdate - Callback to save the edited title.
+ */
 export default function TodoItem({
     item,
     editingId,

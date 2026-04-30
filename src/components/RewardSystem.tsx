@@ -10,6 +10,11 @@ type RewardSystemProps = {
   error: string | null;
 };
 
+/**
+ * Reward system UI component.
+ *
+ * Displays user points, progress toward the next badge, and earned badges.
+ */
 export const RewardSystem = ({
   points,
   nextRewardAt,

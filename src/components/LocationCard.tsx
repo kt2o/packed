@@ -71,6 +71,9 @@ const LocationCard = (props: {
 
 };
 
+/**
+ * Card component displaying a study location and its occupancy status.
+ */
 export default LocationCard;
 
 const styles = StyleSheet.create({

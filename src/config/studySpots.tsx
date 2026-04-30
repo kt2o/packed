@@ -16,6 +16,11 @@ interface Floor {
     displayName: string;
 }
 
+/**
+ * Study spot configuration data.
+ *
+ * Contains the fixed list of campus study spots used throughout the app.
+ */
 export const spots: Spot[] = [{
     id: "ksl", displayName: "KSL",
     image: require("../../assets/ksl.png"),

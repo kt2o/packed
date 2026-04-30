@@ -28,6 +28,11 @@ type EditProfileModalProps = {
   isSaving: boolean;
 };
 
+/**
+ * Modal dialog for editing a user's profile details.
+ *
+ * Supports changing username and selecting a new profile image.
+ */
 export const EditProfileModal = ({
   isVisible,
   onClose,
@@ -67,6 +72,9 @@ export const EditProfileModal = ({
     }
   }, [isVisible, initialUsername, initialImageUri]);
 
+  /**
+   * Open the media library for the user to pick a new profile image.
+   */
   const pickImage = async () => {
     const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
     if (status !== "granted") {
@@ -86,6 +94,9 @@ export const EditProfileModal = ({
     }
   };
 
+  /**
+   * Validate the entered profile details and invoke the save callback.
+   */
   const handleSave = async () => {
     if (username.trim().length < 2) {
       Alert.alert("Error", "Username must be at least 2 characters long.");

@@ -1,3 +1,6 @@
+/**
+ * Webhook handler for forwarding user push notifications via Expo.
+ */
 import { createClient } from "@supabase/supabase-js";
 
 console.log('Hello from Functions!')

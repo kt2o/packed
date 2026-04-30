@@ -5,6 +5,9 @@ import { useMemo } from "react";
 const supabaseUrl = process.env.EXPO_PUBLIC_SUPABASE_URL;
 const supabaseAnonKey = process.env.EXPO_PUBLIC_SUPABASE_ANON_KEY;
 
+/**
+ * Return a memoized Supabase client that attaches a Clerk auth token to each request.
+ */
 export function useSupabase() {
   const { getToken } = useAuth();
 

@@ -1,3 +1,8 @@
+/**
+ * Tests for profile update functions and edit profile UI flows.
+ *
+ * @module __tests__/ProfileFunctions.test
+ */
 import { render, fireEvent, waitFor, act } from "@testing-library/react-native";
 import { Alert, Vibration } from "react-native";
 import ProfileScreen from "src/app/(protected)/(tabs)/profile";

@@ -1,3 +1,8 @@
+/**
+ * Tests for the Pomodoro timer component's UI and interaction flow.
+ *
+ * @module __tests__/PomodoroTimer.test
+ */
 import React from "react";
 import { render, fireEvent, act } from "@testing-library/react-native";
 import { Alert, Vibration } from "react-native";

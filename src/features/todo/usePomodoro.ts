@@ -3,6 +3,11 @@ import { Alert, Vibration } from "react-native";
 import * as Notifications from "expo-notifications";
 import { BREAK_MINUTES, FOCUS_MINUTES } from "./todo.utils";
 
+/**
+ * Custom hook to manage Pomodoro timer state and notifications.
+ *
+ * Provides focus/break mode toggles, timer control, and completion alerts.
+ */
 export function usePomodoro() {
   const [minutes, setMinutes] = useState(FOCUS_MINUTES);
   const [seconds, setSeconds] = useState(0);
@@ -11,6 +16,9 @@ export function usePomodoro() {
 
   const expirationTimeRef = useRef<number | null>(null);
 
+  /**
+   * Reset timer state and cancel any scheduled session notification.
+   */
   const resetTimerState = async (nextIsBreak: boolean = isBreak) => {
     setIsActive(false);
     expirationTimeRef.current = null;
@@ -19,11 +27,17 @@ export function usePomodoro() {
     setSeconds(0);
   };
 
+  /**
+   * Switch between focus and break mode and reset the timer.
+   */
   const handleSwitchMode = async (toBreak: boolean): Promise<void> => {
     setIsBreak(toBreak);
     await resetTimerState(toBreak);
   };
 
+  /**
+   * Notify the user when the Pomodoro session completes.
+   */
   const triggerCompletionAlert = (): void => {
     Vibration.vibrate([500, 500, 500]);
     Alert.alert("Time's Up!", `Ready for your ${isBreak ? "Work" : "Break"}?`, [
@@ -36,6 +50,9 @@ export function usePomodoro() {
     ]);
   };
 
+  /**
+   * Start or stop the current Pomodoro timer session.
+   */
   const handleToggle = async (): Promise<void> => {
     if (isActive) {
       await resetTimerState();

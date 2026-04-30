@@ -8,6 +8,12 @@ import * as Location from "expo-location";
 import { useRouter } from "expo-router";
 import { useUser } from "@clerk/clerk-expo";
 
+/**
+ * Spot detail screen used to verify a user's physical check-in.
+ *
+ * It compares the user's current GPS location with the study spot radius and
+ * records a check-in if the user is close enough.
+ */
 export default function SpotScreen() {
   console.log("Spot Details screen mounted");
   const router = useRouter();
@@ -27,6 +33,9 @@ export default function SpotScreen() {
 
   const userId = user?.id;
 
+  /**
+   * Verify the user's proximity to the selected spot and record a check-in.
+   */
   async function handleCheckin() {
     //Check for Location
     const { status: permissionStatus } = await Location.getForegroundPermissionsAsync();

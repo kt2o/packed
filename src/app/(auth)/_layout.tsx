@@ -1,6 +1,8 @@
-
 import { Stack } from "expo-router";
 
+/**
+ * Public auth layout for sign-in and sign-up routes.
+ */
 export default function AuthLayout() {
   return (
     <Stack>
