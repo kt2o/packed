@@ -22,6 +22,7 @@ __tests__/Cooldown.fuzz.test.tsx
 __tests__/Pommodoro.fuzz.test.tsx
 __tests__/RewardSystem.test.tsx
 __tests__/TodoScreen.test.tsx
+__tests__/Chat.test.tsx
 ```
 
 > Note: `Pommodoro.fuzz.test.tsx` is intentionally listed with the filename currently provided. The file tests Pomodoro timer utility logic, but the filename contains an extra `m` in `Pommodoro`.
@@ -159,6 +160,27 @@ Covers the to-do route with a mocked Supabase data store:
 - Detecting overdue tasks.
 - Keeping the route test focused by mocking `PomodoroTimer` separately.
 
+### Chat Screen tests
+
+**File:** '__tests__/Chat.test.tsx`
+
+ChatScreen Route Test Coverage:
+
+-Covers the chat route with a mocked Supabase data store that always returns no active check‑in.
+-Rendering the chat screen’s loading state with a visible activity indicator.
+-Showing the locked state when the user has no active check‑in.
+-Displaying the lock icon, “Chat Locked” header, and explanatory message.
+-Rendering the “Contribute Now” button for users who are not checked in.
+-Ensuring no chat UI elements appear when the user is not verified:
+-No message list
+-No input field
+-No send button
+-No chat header
+-Verifying that the route does not crash or enter infinite re-render loops when Supabase returns empty results.
+-Keeping the route test focused by mocking navigation and Supabase behavior separately.
+
+
+
 ## How to run the tests
 
 Run all commands from the project root.
@@ -231,6 +253,7 @@ npx jest __tests__/Cooldown.fuzz.test.tsx --runInBand
 npx jest __tests__/Pommodoro.fuzz.test.tsx --runInBand
 npx jest __tests__/RewardSystem.test.tsx --runInBand
 npx jest __tests__/TodoScreen.test.tsx --runInBand
+npx jest __tests__/Chat.test.tsx --runInBand
 ```
 
 ### 5. Run in watch mode while developing
