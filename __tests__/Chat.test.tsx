@@ -1,3 +1,10 @@
+/**
+ * Tests for the chat route UI and availability states.
+ *
+ * These tests validate chat screen rendering, loading behavior, and locked-state messaging.
+ *
+ * @module __tests__/Chat.test
+ */
 import React from "react";
 import { render, waitFor } from "@testing-library/react-native";
 import ChatScreen from "../src/app/(protected)/(tabs)/chat";
